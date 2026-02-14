@@ -1,5 +1,9 @@
 # Voice Stall
 
+<p align="center">
+  <img src="voice_stall_icon.png" alt="Voice Stall Logo" width="180" />
+</p>
+
 Dictado local para Windows con `faster-whisper`, hotkey global y pegado automático en la ventana activa.
 
 ## Estado actual
