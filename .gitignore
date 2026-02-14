@@ -19,3 +19,15 @@ dictation_history.json
 timings.log
 timings.log.1
 backup_dictado.txt
+
+# Local-only docs and planning (keep on disk, not in GitHub)
+CONDUCTOR_TUTORIAL.md
+HISTORIAL_CAMBIOS.md
+documentacion.md
+investigacion_stt.md
+plan_implementacion.md
+criticas_ejecucion.md
+conductor/
+
+# Local assets not used by runtime
+Gemini_Generated_Image_anncvvanncvvannc.png
