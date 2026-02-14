@@ -1,35 +1,24 @@
-# Documentacion de Voice Stall (Dictado Local)
+# Documentación Voice Stall (Dictado Pro Local)
 
-Este proyecto ha sido diseñado para ofrecer una experiencia de dictado profesional, rápida y privada, funcionando íntegramente de forma local en tu equipo.
+Herramienta de dictado inteligente diseñada para ingenieros, optimizada para funcionar localmente con una NVIDIA A5070.
 
-## 1. Funcionamiento 100% Local
-La aplicación **no envía audio ni texto a la nube**. Todo el procesamiento ocurre dentro de tu ordenador gracias a los modelos de inteligencia artificial alojados en tu disco duro. Esto garantiza:
-*   **Privacidad Total**: Tus conversaciones y dictados nunca salen de tu máquina.
-*   **Sin Suscripciones**: No dependes de APIs externas ni cuotas mensuales.
-*   **Funcionamiento Offline**: Puedes dictar aunque no tengas conexión a internet.
+## 🚀 Inicio Rápido
+1. **Atajo:** `Ctrl + Alt + S` para dictar. El primer dictado cargará el motor de IA (tardará unos segundos).
+2. **Configuración (⚙):** Haz clic en el engranaje para personalizar el diccionario o activar el LLM.
+3. **Guardar:** Usa siempre el botón "Guardar y Aplicar" para confirmar tus ajustes.
 
-## 2. Tecnologías Utilizadas
-*   **faster-whisper (Engine)**: Una implementación optimizada del modelo Whisper de OpenAI que permite una transcripción extremadamente rápida.
-*   **NVIDIA CUDA**: Al detectar tu tarjeta NVIDIA A5070, la app utiliza los núcleos Tensor para acelerar el dictado, reduciendo la latencia al mínimo.
-*   **Puntuación Inteligente**: El modelo `large-v3-turbo` está configurado para entender el contexto y añadir puntos, comas y mayúsculas automáticamente basándose en tus pausas y entonación.
-*   **Interfaz Windows**: Una pequeña ventana flotante y minimalista que indica el estado del dictado (Grabando, Procesando, Listo).
+## 🧠 Características Especiales
+- **Modo Spanglish:** Configurado para entender términos técnicos en inglés dentro de frases en español.
+- **IA Refinamiento (Opcional):** Si activas **Qwen LLM**, la app pulirá tu texto automáticamente tras pegarlo. Requiere [Ollama](https://ollama.com) con el modelo `qwen2.5-coder:3b`.
+- **Modo Inglés:** Fuerza la precisión en inglés técnico cuando lo necesites.
 
-## 3. Guía de Uso
-*   **Atajo de Teclado**: Presiona `Ctrl + Alt + S` para empezar a grabar. Presiona la misma combinación para detenerte.
-*   **Inserción de Texto**: Una vez procesado, el texto aparecerá automáticamente donde esté tu cursor.
-*   **Indicadores Visuales**:
-    *   **Gris**: En espera (Voice Stall descansando).
-    *   **Rojo**: Grabando audio.
-    *   **Azul/Animado**: Procesando con IA.
+## 🛠️ Mantenimiento y Portabilidad
+- **Mover la carpeta:** Si mueves la carpeta del proyecto, ejecuta `crear_acceso_directo.ps1` (Clic derecho -> Ejecutar con PowerShell) para reparar el acceso directo del escritorio.
+- **Diccionario:** Puedes añadir términos como "kiwin" -> "Qwen" para que la app nunca se equivoque con nombres propios o marcas.
+- **Privacidad:** Nada sale de tu ordenador. Todo el audio y texto se procesan en local.
 
-## 4. Optimización de Recursos
-La app está configurada para aprovechar tus **32GB de RAM** y los **8GB de VRAM** de tu NVIDIA A5070:
-*   **Modo float16**: Utiliza precisión de punto flotante de 16 bits en la GPU, lo que acelera el procesamiento sin perder precisión.
-*   **Gestión de VRAM**: El modelo `large-v3-turbo` ocupa aproximadamente 3-4GB de VRAM, dejando el resto libre para que tu sistema no se ralentice.
-
-## 5. Tip para Portátiles (NVIDIA Optimus)
-Si notas que la app tarda unos segundos en "despertar" en el primer dictado, puedes forzar el alto rendimiento:
-1.  Ve a **Configuración de Windows** > **Sistema** > **Pantalla** > **Gráficos**.
-2.  Busca el ejecutable de Python de este proyecto: `c:\Users\chris\Downloads\Voz\.venv\Scripts\python.exe`.
-3.  Haz clic en **Opciones** y selecciona **Alto rendimiento** (GPU NVIDIA).
-
+## 📦 Dependencias (Gestión con UV)
+Para añadir paquetes o limpiar:
+```powershell
+uv add <paquete> --index-strategy unsafe-best-match
+```

@@ -7,7 +7,8 @@ import pyaudio
 
 class AudioRecorder:
     def __init__(self, filename="temp_audio.wav"):
-        self.filename = filename
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.filename = os.path.join(base_dir, filename)
         self.chunk = 1024
         self.format = pyaudio.paInt16
         self.channels = 1
