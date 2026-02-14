@@ -8,3 +8,14 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Test and tooling caches
+.pytest_cache/
+.gemini/
+
+# Voice Stall runtime artifacts
+temp_audio.wav
+dictation_history.json
+timings.log
+timings.log.1
+backup_dictado.txt

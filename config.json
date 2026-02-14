@@ -1,0 +1,23 @@
+{
+  "engine": {
+    "model_size": "large-v3-turbo",
+    "language": "auto",
+    "compute_type": "float16",
+    "initial_prompt": "Dictado profesional en español con terminología técnica en inglés (Spanglish). Soporta Python, Matlab y conceptos de ingeniería. Transcribe solo lo dicho. Mantén los términos en inglés exactamente como se pronuncian y no los traduzcas al español. No añadas palabras de cierre ni fórmulas de cortesía (por ejemplo, gracias).",
+    "use_llm": false,
+    "profile": "balanced"
+  },
+  "app": {
+    "hotkey": "ctrl+alt+s",
+    "history_limit": 5,
+    "timing_log_max_kb": 512
+  },
+  "dictionary": {
+    "kiwin": "Qwen",
+    "voz tal": "Voice Stall",
+    "q wen": "Qwen",
+    "paifón": "Python",
+    "matlap": "Matlab",
+    "geminiclip": "gemini-cli"
+  }
+}
