@@ -1162,8 +1162,8 @@ wheels = [
 ]
 
 [[package]]
-name = "voz"
-version = "0.1.0"
+name = "voice-stall"
+version = "0.2.0"
 source = { virtual = "." }
 dependencies = [
     { name = "faster-whisper" },

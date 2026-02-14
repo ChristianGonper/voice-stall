@@ -10,7 +10,8 @@
   "app": {
     "hotkey": "ctrl+alt+s",
     "history_limit": 5,
-    "timing_log_max_kb": 512
+    "timing_log_max_kb": 512,
+    "diagnostic_mode": false
   },
   "dictionary": {
     "kiwin": "Qwen",

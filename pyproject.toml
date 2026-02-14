@@ -1,7 +1,7 @@
 [project]
-name = "voz"
-version = "0.1.0"
-description = "Add your description here"
+name = "voice-stall"
+version = "0.2.0"
+description = "Aplicación local de dictado por voz para Windows con faster-whisper y pegado automático."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

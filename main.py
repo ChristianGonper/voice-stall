@@ -21,6 +21,7 @@ class VoiceStallApp:
         self.config_path = os.path.join(self.base_dir, "config.json")
         self.history_path = os.path.join(self.base_dir, "dictation_history.json")
         self.timing_log_path = os.path.join(self.base_dir, "timings.log")
+        self.cli_diagnostic_forced = any(arg in ("--diag", "--diagnostic") for arg in sys.argv[1:])
 
         self.recorder = AudioRecorder()
         self.engine = None
@@ -32,6 +33,8 @@ class VoiceStallApp:
         self.hotkey_listener = None
         self.history = []
         self.app_config = self._load_app_settings()
+        if self.cli_diagnostic_forced:
+            self.app_config["diagnostic_mode"] = True
 
         self.root = tk.Tk()
         self.root.title("Voice Stall")
@@ -137,6 +140,7 @@ class VoiceStallApp:
                 "hotkey": "ctrl+alt+s",
                 "history_limit": 5,
                 "timing_log_max_kb": 512,
+                "diagnostic_mode": False,
             },
             "dictionary": {},
         }
@@ -147,6 +151,7 @@ class VoiceStallApp:
         app_cfg.setdefault("hotkey", "ctrl+alt+s")
         app_cfg.setdefault("history_limit", 5)
         app_cfg.setdefault("timing_log_max_kb", 512)
+        app_cfg.setdefault("diagnostic_mode", False)
         cfg["app"] = app_cfg
         self._save_config(cfg)
         self.history = self._load_history(app_cfg["history_limit"])
@@ -253,6 +258,8 @@ class VoiceStallApp:
             print(f"No se pudo rotar log de tiempos: {e}")
 
     def _log_timing(self, payload):
+        if not self.app_config.get("diagnostic_mode", False):
+            return
         payload["ts"] = datetime.now().isoformat(timespec="seconds")
         self._rotate_timing_log_if_needed()
         try:
@@ -463,6 +470,7 @@ class VoiceStallApp:
         self.temp_config["app"].setdefault("hotkey", self.app_config.get("hotkey", "ctrl+alt+s"))
         self.temp_config["app"].setdefault("history_limit", 5)
         self.temp_config["app"].setdefault("timing_log_max_kb", 512)
+        self.temp_config["app"].setdefault("diagnostic_mode", self.app_config.get("diagnostic_mode", False))
 
         header_f = tk.Frame(editor, bg=self.header_color, pady=15)
         header_f.pack(fill="x")
@@ -503,6 +511,8 @@ class VoiceStallApp:
             elif feature == "profile":
                 cur = self.temp_config["engine"].get("profile", "balanced")
                 self.temp_config["engine"]["profile"] = cycle_profile(cur)
+            elif feature == "diag":
+                self.temp_config["app"]["diagnostic_mode"] = not self.temp_config["app"].get("diagnostic_mode", False)
             refresh_ui()
 
         btn_llm = tk.Button(toggle_f, text="Qwen LLM", command=lambda: switch_temp("llm"), font=("Bahnschrift", 9), borderwidth=0, padx=10)
@@ -513,6 +523,8 @@ class VoiceStallApp:
         btn_model.pack(side="left", padx=5)
         btn_profile = tk.Button(toggle_f, text="Perfil", command=lambda: switch_temp("profile"), font=("Bahnschrift", 9), borderwidth=0, padx=10)
         btn_profile.pack(side="left", padx=5)
+        btn_diag = tk.Button(toggle_f, text="Diag", command=lambda: switch_temp("diag"), font=("Bahnschrift", 9), borderwidth=0, padx=10)
+        btn_diag.pack(side="left", padx=5)
 
         hotkey_card = tk.Frame(editor, bg=self.frame_color, padx=12, pady=10)
         hotkey_card.pack(fill="x", padx=15, pady=(0, 10))
@@ -542,6 +554,7 @@ class VoiceStallApp:
             language = str(self.temp_config["engine"].get("language", "auto")).upper()
             model_large = self.temp_config["engine"].get("model_size", "large-v3-turbo") == "large-v3-turbo"
             profile = str(self.temp_config["engine"].get("profile", "balanced")).upper()
+            diagnostic_on = self.temp_config["app"].get("diagnostic_mode", False)
             btn_llm.config(
                 text=f"Qwen: {'ON' if llm_on else 'OFF'}",
                 bg=self.listening_color if llm_on else self.hotkey_bg,
@@ -554,6 +567,11 @@ class VoiceStallApp:
                 fg=self.text_color,
             )
             btn_profile.config(text=f"Perf: {profile}", bg="#34495E", fg=self.text_color)
+            btn_diag.config(
+                text=f"Diag: {'ON' if diagnostic_on else 'OFF'}",
+                bg=self.processing_color if diagnostic_on else self.hotkey_bg,
+                fg=self.bg_color if diagnostic_on else self.text_color,
+            )
 
         refresh_ui()
 
@@ -688,10 +706,17 @@ class VoiceStallApp:
         stats_card = tk.Frame(editor, bg=self.frame_color, padx=12, pady=10)
         stats_card.pack(fill="x", padx=15, pady=(0, 12))
         tk.Label(stats_card, text="Promedio rendimiento (últimos 5)", fg=self.subtitle_color, bg=self.frame_color, font=("Bahnschrift", 9)).pack(anchor="w")
+        tk.Label(
+            stats_card,
+            text=f"Modo diagnóstico: {'ON' if self.app_config.get('diagnostic_mode', False) else 'OFF'}",
+            fg=self.text_color,
+            bg=self.frame_color,
+            font=("Bahnschrift", 8),
+        ).pack(anchor="w", pady=(2, 0))
         if stats["count"] == 0:
             tk.Label(
                 stats_card,
-                text="Aún no hay datos de dictado.",
+                text="Sin datos. Activa Diag y realiza dictados.",
                 fg=self.text_color,
                 bg=self.frame_color,
                 font=("Bahnschrift", 8),
