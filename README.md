@@ -8,13 +8,14 @@ Dictado local para Windows con `faster-whisper`, hotkey global y pegado automát
 
 ## Estado actual
 
-- Versión: `0.2.0`
+- Versión: `2.0.0` (**Voice Stall v2** con interfaz PySide6)
 - Motor STT local (sin APIs externas para transcribir)
 - Idioma por defecto: `auto` (detecta español/inglés)
 - Perfiles de dictado: `fast`, `balanced`, `accurate`
 - Hotkey configurable desde la UI
 - Historial local de últimos 5 dictados
 - Modo diagnóstico opcional con métricas de tiempos
+- Versión legacy v1 (Tkinter) disponible en carpeta `v1/`
 
 ## Flujo
 
