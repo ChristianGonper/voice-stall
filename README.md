@@ -75,10 +75,29 @@ uv sync
 uv run main.py
 ```
 
+Interfaz moderna (PySide6, fase inicial):
+
+```powershell
+uv run main_qt.py
+```
+
 Opcional:
 
 ```powershell
-.\start_voz.cmd
+.\start_voz_qt.cmd
+```
+
+Accesos directos en escritorio:
+
+```powershell
+.\crear_acceso_directo_v2.ps1   # Voice Stall v2 (Qt)
+```
+
+Build legacy v1 (mantenida en carpeta separada):
+
+```powershell
+.\v1\start_voz.cmd
+.\v1\crear_acceso_directo.ps1
 ```
 
 ## Tests

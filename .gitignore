@@ -8,6 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+.vscode/
+.idea/
 
 # Test and tooling caches
 .pytest_cache/
@@ -19,6 +21,7 @@ dictation_history.json
 timings.log
 timings.log.1
 backup_dictado.txt
+*.lnk
 
 # Local-only docs and planning (keep on disk, not in GitHub)
 CONDUCTOR_TUTORIAL.md
