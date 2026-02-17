@@ -101,6 +101,7 @@ class SettingsDialog(QDialog):
 
         self.diag_mode = QCheckBox("Activar metricas de diagnostico")
         self.diag_mode.setChecked(bool(app_cfg.get("diagnostic_mode", False)))
+        self.diag_mode.toggled.connect(self._on_diag_mode_toggled)
         form.addRow("Diagnostico", self.diag_mode)
 
         self.history_limit = QSpinBox()
@@ -150,8 +151,8 @@ class SettingsDialog(QDialog):
         lower.addWidget(history_box, 2)
         root.addLayout(lower)
 
-        metrics_box = QGroupBox("Metricas de rendimiento")
-        metrics_layout = QVBoxLayout(metrics_box)
+        self.metrics_box = QGroupBox("Metricas de rendimiento")
+        metrics_layout = QVBoxLayout(self.metrics_box)
         self.metrics_summary = QLabel("Sin datos")
         self.metrics_summary.setObjectName("hint")
         metrics_layout.addWidget(self.metrics_summary)
@@ -168,7 +169,7 @@ class SettingsDialog(QDialog):
         refresh_metrics_btn = QPushButton("Refrescar metricas")
         refresh_metrics_btn.clicked.connect(self.refresh_metrics_view)
         metrics_layout.addWidget(refresh_metrics_btn)
-        root.addWidget(metrics_box)
+        root.addWidget(self.metrics_box)
 
         row = QHBoxLayout()
         row.addStretch()
@@ -203,6 +204,12 @@ class SettingsDialog(QDialog):
         self.refresh_dictionary_list()
         self.refresh_history_view()
         self.refresh_metrics_view()
+        self._on_diag_mode_toggled(bool(self.diag_mode.isChecked()))
+
+    def _on_diag_mode_toggled(self, enabled):
+        self.metrics_box.setVisible(bool(enabled))
+        if enabled:
+            self.refresh_metrics_view()
 
     def refresh_dictionary_list(self):
         self.dict_list.clear()
@@ -346,6 +353,9 @@ class VoiceStallQtApp(QMainWindow):
         self.current_status = "loading"
         self.status_base_text = "Cargando motor"
         self._dots = 0
+        self.status_timer = QTimer(self)
+        self.status_timer.setInterval(350)
+        self.status_timer.timeout.connect(self._tick_status)
 
         self._build_ui()
         self._setup_animations()
@@ -461,10 +471,6 @@ class VoiceStallQtApp(QMainWindow):
         self._apply_status("loading", "Cargando motor...")
 
     def _setup_animations(self):
-        self.status_timer = QTimer(self)
-        self.status_timer.setInterval(350)
-        self.status_timer.timeout.connect(self._tick_status)
-
         self.fade_in = QPropertyAnimation(self, b"windowOpacity")
         self.fade_in.setDuration(220)
         self.fade_in.setStartValue(0.94)
