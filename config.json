@@ -19,7 +19,6 @@
     "q wen": "Qwen",
     "paifón": "Python",
     "matlap": "Matlab",
-    "geminiclip": "gemini-cli",
-    "cloudcode": "Claude Code"
+    "geminiclip": "gemini-cli"
   }
 }
