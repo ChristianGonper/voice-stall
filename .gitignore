@@ -24,6 +24,8 @@ backup_dictado.txt
 *.lnk
 
 # Local-only docs and planning (keep on disk, not in GitHub)
+AGENTS.md
+REDESIGN_PYSIDE6_2026.md
 CONDUCTOR_TUTORIAL.md
 HISTORIAL_CAMBIOS.md
 documentacion.md

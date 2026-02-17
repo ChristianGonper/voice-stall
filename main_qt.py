@@ -3,6 +3,7 @@ import os
 import sys
 import threading
 import time
+import ctypes
 from datetime import datetime
 
 import pyautogui
@@ -826,8 +827,18 @@ class VoiceStallQtApp(QMainWindow):
 
 
 if __name__ == "__main__":
+    # Ensure Windows taskbar groups this process with a custom app ID so the icon is used.
+    if os.name == "nt":
+        try:
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("voice.stall.qt")
+        except Exception:
+            pass
+
     app = QApplication(sys.argv)
     app.setFont(QFont("Segoe UI", 10))
+    app_icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "voice_stall_icon.ico")
+    if os.path.exists(app_icon_path):
+        app.setWindowIcon(QIcon(app_icon_path))
     win = VoiceStallQtApp()
     win.show()
     sys.exit(app.exec())
