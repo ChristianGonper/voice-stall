@@ -22,6 +22,7 @@ timings.log
 timings.log.1
 backup_dictado.txt
 *.lnk
+config.json
 
 # Local-only docs and planning (keep on disk, not in GitHub)
 AGENTS.md
@@ -36,3 +37,6 @@ conductor/
 
 # Local assets not used by runtime
 Gemini_Generated_Image_anncvvanncvvannc.png
+
+gha-creds-*.json
+REVISION_PROYECTO_BRANCHES_PRS_*.md

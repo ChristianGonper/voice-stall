@@ -109,3 +109,32 @@ def test_refine_with_llm_error(mocker):
         # Debe devolver el texto original si falla el LLM
         result = engine.refine_with_llm("Texto original")
         assert result == "Texto original"
+
+
+def test_load_config_falls_back_to_config_default(tmp_path, mocker):
+    with patch("engine.WhisperModel"):
+        mocker.patch("torch.cuda.is_available", return_value=True)
+        engine = STTEngine()
+
+    default_cfg = {
+        "engine": {
+            "model_size": "base",
+            "language": "en",
+            "compute_type": "float16",
+            "initial_prompt": "Default prompt",
+            "use_llm": False,
+            "profile": "fast",
+        },
+        "dictionary": {"paifon": "Python"},
+    }
+    default_path = tmp_path / "config.default.json"
+    default_path.write_text(json.dumps(default_cfg), encoding="utf-8")
+
+    engine.config_path = str(tmp_path / "config.json")  # no existe
+    engine.default_config_path = str(default_path)
+    engine.load_config(force=True)
+
+    assert engine.model_size == "base"
+    assert engine.language == "en"
+    assert engine.profile == "fast"
+    assert engine.dictionary == {"paifon": "Python"}
