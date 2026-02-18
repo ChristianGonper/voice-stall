@@ -333,6 +333,7 @@ class VoiceStallQtApp(QMainWindow):
         super().__init__()
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
         self.config_path = os.path.join(self.base_dir, "config.json")
+        self.default_config_path = os.path.join(self.base_dir, "config.default.json")
         self.history_path = os.path.join(self.base_dir, "dictation_history.json")
         self.timing_log_path = os.path.join(self.base_dir, "timings.log")
         self.cli_diagnostic_forced = any(arg in ("--diag", "--diagnostic") for arg in sys.argv[1:])
@@ -506,10 +507,11 @@ class VoiceStallQtApp(QMainWindow):
 
     def _safe_load_config(self):
         default_cfg = self._default_config()
-        if not os.path.exists(self.config_path):
+        config_source = self.config_path if os.path.exists(self.config_path) else self.default_config_path
+        if not os.path.exists(config_source):
             return default_cfg
         try:
-            with open(self.config_path, "r", encoding="utf-8") as f:
+            with open(config_source, "r", encoding="utf-8") as f:
                 cfg = json.load(f)
         except Exception:
             return default_cfg

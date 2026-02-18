@@ -5,7 +5,9 @@ from faster_whisper import WhisperModel
 
 class STTEngine:
     def __init__(self, model_size=None, device="cuda", compute_type=None):
-        self.config_path = os.path.join(os.path.dirname(__file__), "config.json")
+        base_dir = os.path.dirname(__file__)
+        self.config_path = os.path.join(base_dir, "config.json")
+        self.default_config_path = os.path.join(base_dir, "config.default.json")
         self.config = {}
         self._config_mtime = None
         self._dictionary_patterns = []
@@ -40,16 +42,17 @@ class STTEngine:
             },
             "dictionary": {}
         }
-        file_mtime = os.path.getmtime(self.config_path) if os.path.exists(self.config_path) else None
+        config_source = self.config_path if os.path.exists(self.config_path) else self.default_config_path
+        file_mtime = os.path.getmtime(config_source) if os.path.exists(config_source) else None
         if not force and self.config and file_mtime == self._config_mtime:
             return False
-        
-        if os.path.exists(self.config_path):
+
+        if os.path.exists(config_source):
             try:
-                with open(self.config_path, "r", encoding="utf-8") as f:
+                with open(config_source, "r", encoding="utf-8") as f:
                     self.config = json.load(f)
             except Exception as e:
-                print(f"Error cargando config.json: {e}")
+                print(f"Error cargando configuracion: {e}")
                 self.config = default_config
         else:
             self.config = default_config
