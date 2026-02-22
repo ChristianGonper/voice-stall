@@ -17,8 +17,24 @@ dependencies = [
     "torch==2.5.1",
 ]
 
+# Índice CUDA 12.1 para Windows (GPU local)
 [[tool.uv.index]]
+name = "pytorch-cu121"
 url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+
+# Índice CPU para CI / Linux / macOS
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+# En Windows resuelve torch desde el índice CUDA; en el resto desde CPU
+torch = [
+    { index = "pytorch-cu121", marker = "sys_platform == 'win32'" },
+    { index = "pytorch-cpu",   marker = "sys_platform != 'win32'" },
+]
 
 [dependency-groups]
 dev = [
