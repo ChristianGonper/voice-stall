@@ -10,7 +10,6 @@ Aplicación local de dictado para Windows con `faster-whisper`, hotkey global y 
 
 - Rama canónica: `version-2.0`
 - App principal (v2): `main_qt.py` (PySide6)
-- App legacy (v1): carpeta `v1/`
 
 ## Requisitos
 
@@ -39,14 +38,6 @@ Opcional:
 .\crear_acceso_directo_v2.ps1
 ```
 
-## Ejecutar v1 (legacy)
-
-```powershell
-.\v1\start_voz.cmd
-.\v1\start_voz_silent.vbs
-.\v1\crear_acceso_directo.ps1
-```
-
 ## Configuración
 
 - Plantilla versionada: `config.default.json`
@@ -65,7 +56,6 @@ uv run python -m pytest -q
 - `main_qt.py`: UI principal, hotkey, historial, diagnóstico, pegado
 - `engine.py`: STT, perfiles, prompt y diccionario
 - `recorder.py`: captura de audio y WAV temporal
-- `v1/`: versión legacy separada
 - `tests/`: tests unitarios
 
 ## Privacidad

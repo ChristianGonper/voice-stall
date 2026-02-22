@@ -17,12 +17,8 @@
   - `start_voz_qt.cmd`: launcher Windows
   - `start_voz_qt_silent.vbs`: inicio silencioso
   - `crear_acceso_directo_v2.ps1`: script de acceso directo
-- Versión legacy v1 archivada en carpeta `v1/`
-  - Mantiene interfaz Tkinter original
-  - Completamente funcional y autónoma
-  - Scripts de inicio: `v1/start_voz.cmd`, `v1/start_voz_silent.vbs`
 - Documentación actualizada:
-  - `README.md` con instrucciones para v2 y v1
+  - `README.md` con instrucciones para v2
   - `REDESIGN_PYSIDE6_2026.md` con detalles de arquitectura UI
   - `AGENTS.md` con directrices de desarrollo
 - `.gitignore` reforzado para archivos de runtime
