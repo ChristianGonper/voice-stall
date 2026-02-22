@@ -23,7 +23,9 @@ jobs:
         uses: astral-sh/setup-uv@v4
 
       - name: Install system dependencies
-        run: sudo apt-get install -y portaudio19-dev
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends portaudio19-dev
 
       - name: Sync dependencies
         run: uv sync --frozen
