@@ -20,6 +20,7 @@ const EMPTY_METRICS: MetricsSummary = {
 
 export function App() {
   const [ready, setReady] = useState(false);
+  const [bootError, setBootError] = useState<string | null>(null);
   const [status, setStatus] = useState("loading");
   const [statusMessage, setStatusMessage] = useState("Cargando motor...");
   const [config, setConfig] = useState<FullConfig | null>(null);
@@ -27,6 +28,17 @@ export function App() {
   const [metrics, setMetrics] = useState<MetricsSummary>(EMPTY_METRICS);
   const [newDictKey, setNewDictKey] = useState("");
   const [newDictValue, setNewDictValue] = useState("");
+
+  const loadInitialState = async () => {
+    const state: AppStateDto = await initApp();
+    setConfig(state.config);
+    setMetrics(state.metrics);
+    setHistoryText(state.history.map((h) => `${h.ts}\n${h.text}`));
+    setStatus(state.status);
+    setStatusMessage("Listo para dictar");
+    setBootError(null);
+    setReady(true);
+  };
 
   useEffect(() => {
     let unlistenStatus: (() => void) | undefined;
@@ -42,18 +54,14 @@ export function App() {
         setMetrics(m);
       });
 
-      const state: AppStateDto = await initApp();
-      setConfig(state.config);
-      setMetrics(state.metrics);
-      setHistoryText(state.history.map((h) => `${h.ts}\n${h.text}`));
-      setStatus(state.status);
-      setStatusMessage("Listo para dictar");
-      setReady(true);
+      await loadInitialState();
     };
 
     setup().catch((err) => {
       setStatus("error");
       setStatusMessage(`Error init: ${String(err)}`);
+      setBootError(String(err));
+      setReady(true);
     });
 
     return () => {
@@ -121,8 +129,35 @@ export function App() {
     setNewDictValue("");
   };
 
-  if (!ready || !config) {
+  if (!ready) {
     return <div className="app">Cargando...</div>;
+  }
+
+  if (bootError || !config) {
+    return (
+      <div className="app">
+        <h2 style={{ marginTop: 0 }}>Voice Stall Tauri</h2>
+        <p style={{ color: "#ffb8b8" }}>Error de inicializacion: {bootError ?? "No se pudo cargar estado"}</p>
+        <div className="row">
+          <button
+            className="primary"
+            onClick={() => {
+              setReady(false);
+              setStatus("loading");
+              setStatusMessage("Reintentando...");
+              loadInitialState().catch((err) => {
+                setStatus("error");
+                setStatusMessage(`Error init: ${String(err)}`);
+                setBootError(String(err));
+                setReady(true);
+              });
+            }}
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
