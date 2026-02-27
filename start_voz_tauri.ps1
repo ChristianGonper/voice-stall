@@ -1,6 +1,4 @@
-param(
-    [switch]$Hidden
-)
+param()
 
 $ErrorActionPreference = 'Stop'
 $projectDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -36,16 +34,9 @@ try {
         $env:PATH = "$cargoBin;$env:PATH"
     }
 
-    if ($Hidden) {
-        $cmdArgs = "/d /c `"$npmPath run tauri -- dev >> `"$logPath`" 2>>&1`""
-        Start-Process -FilePath "cmd.exe" -ArgumentList $cmdArgs -WorkingDirectory $tauriAppDir -WindowStyle Hidden
-        exit 0
-    }
-    else {
-        Set-Location $tauriAppDir
-        & $npmPath run tauri -- dev
-        exit $LASTEXITCODE
-    }
+    Set-Location $tauriAppDir
+    & $npmPath run tauri -- dev
+    exit $LASTEXITCODE
 }
 catch {
     $_.Exception.Message | Set-Content -Path $logPath -Encoding UTF8
