@@ -87,6 +87,7 @@ export function App() {
   const [tab, setTab] = useState<TabKey>("control");
   const [miniMode, setMiniMode] = useState(false);
   const [showOverlay, setShowOverlay] = useState(true);
+  const [isCompactViewport, setIsCompactViewport] = useState(false);
 
   const loadInitialState = async () => {
     const state: AppStateDto = await initApp();
@@ -131,6 +132,15 @@ export function App() {
         unlistenDiag();
       }
     };
+  }, []);
+
+  useEffect(() => {
+    const updateViewportFlag = () => {
+      setIsCompactViewport(window.innerWidth < 1080 || window.innerHeight < 760);
+    };
+    updateViewportFlag();
+    window.addEventListener("resize", updateViewportFlag);
+    return () => window.removeEventListener("resize", updateViewportFlag);
   }, []);
 
   const hotkeyLabel = useMemo(() => {
@@ -258,6 +268,7 @@ export function App() {
               <input type="checkbox" checked={showOverlay} onChange={(e) => setShowOverlay(e.target.checked)} />
               Overlay activo
             </label>
+            {isCompactViewport && <span className="compact-hint">Overlay oculto en vista compacta</span>}
             <span className="hotkey-badge">{hotkeyLabel}</span>
           </div>
 
@@ -402,7 +413,11 @@ export function App() {
         </div>
       )}
 
-      <StatusOverlay visible={showOverlay} status={status} statusMessage={statusMessage} />
+      <StatusOverlay
+        visible={showOverlay && !miniMode && !isCompactViewport}
+        status={status}
+        statusMessage={statusMessage}
+      />
     </div>
   );
 }

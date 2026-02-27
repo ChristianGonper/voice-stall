@@ -80,6 +80,11 @@ body {
   font-weight: 700;
 }
 
+.compact-hint {
+  color: #f6d08b;
+  font-size: 0.82rem;
+}
+
 button,
 select,
 input,
