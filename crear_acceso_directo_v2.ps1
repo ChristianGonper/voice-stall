@@ -1,18 +1,24 @@
-# Crea/repara accesos directos y apunta el principal a Tauri (launcher visible).
+# Crea/repara accesos directos de Tauri: principal silencioso + debug visible.
 $projectDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$tauriTargetScript = Join-Path $projectDir "start_voz_tauri.cmd"
-$tauriSilentTargetScript = Join-Path $projectDir "start_voz_tauri_silent.vbs"
+$tauriVisibleScript = Join-Path $projectDir "start_voz_tauri.cmd"
+$tauriSilentScript = Join-Path $projectDir "start_voz_tauri_silent.vbs"
 $qtTargetScript = Join-Path $projectDir "start_voz_qt_silent.vbs"
 
-if (-not (Test-Path $tauriTargetScript)) {
+if (-not (Test-Path $tauriVisibleScript)) {
     Write-Host "[ERROR] No se encontro start_voz_tauri.cmd en: $projectDir" -ForegroundColor Red
+    pause
+    exit 1
+}
+
+if (-not (Test-Path $tauriSilentScript)) {
+    Write-Host "[ERROR] No se encontro start_voz_tauri_silent.vbs en: $projectDir" -ForegroundColor Red
     pause
     exit 1
 }
 
 if (-not (Test-Path $qtTargetScript)) {
     Write-Host "[WARN] No se encontro start_voz_qt_silent.vbs en: $projectDir" -ForegroundColor Yellow
-    Write-Host "Se creara solo el acceso directo de Tauri." -ForegroundColor Yellow
+    Write-Host "Se crearan solo los accesos de Tauri." -ForegroundColor Yellow
 }
 
 $desktop = [Environment]::GetFolderPath("Desktop")
@@ -22,18 +28,15 @@ $wsh = New-Object -ComObject WScript.Shell
 $shortcuts = @(
     @{
         Name = "Voice Stall v2.lnk"
-        Script = $tauriTargetScript
-        Description = "Voice Stall v2 - Tauri (launcher visible)"
+        Script = $tauriSilentScript
+        Description = "Voice Stall v2 - Tauri (silencioso)"
+    },
+    @{
+        Name = "Voice Stall v2 Debug.lnk"
+        Script = $tauriVisibleScript
+        Description = "Voice Stall v2 - Tauri (debug visible)"
     }
 )
-
-if (Test-Path $tauriSilentTargetScript) {
-    $shortcuts += @{
-        Name = "Voice Stall v2 Silent.lnk"
-        Script = $tauriSilentTargetScript
-        Description = "Voice Stall v2 - Tauri (silent)"
-    }
-}
 
 if (Test-Path $qtTargetScript) {
     $shortcuts += @{
@@ -70,6 +73,7 @@ foreach ($item in $shortcuts) {
 
 Write-Host "------------------------------------------------" -ForegroundColor Cyan
 Write-Host "Accesos directos listos." -ForegroundColor Green
-Write-Host "Principal: Voice Stall v2.lnk (Tauri visible)" -ForegroundColor Green
+Write-Host "Principal: Voice Stall v2.lnk (Tauri silencioso)" -ForegroundColor Green
+Write-Host "Debug: Voice Stall v2 Debug.lnk (con consola)" -ForegroundColor Green
 Write-Host "------------------------------------------------" -ForegroundColor Cyan
 Start-Sleep -Seconds 2
