@@ -1,13 +1,14 @@
 mod sidecar;
 
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sidecar::SidecarManager;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tauri::Manager;
 
 struct AppState {
-    sidecar: Mutex<SidecarManager>,
+    sidecar: Arc<Mutex<SidecarManager>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -17,63 +18,68 @@ struct ToggleResult {
     text: Option<String>,
 }
 
-#[tauri::command]
-fn init_app(state: tauri::State<AppState>) -> Result<serde_json::Value, String> {
-    let mut sidecar = state.sidecar.lock().map_err(|_| "lock sidecar".to_string())?;
-    sidecar
-        .request::<serde_json::Value>("load_app_state", json!({}))
-        .map_err(|e| e.to_string())
+async fn call_sidecar<T>(
+    state: tauri::State<'_, AppState>,
+    method: &'static str,
+    params: serde_json::Value,
+) -> Result<T, String>
+where
+    T: DeserializeOwned + Send + 'static,
+{
+    let sidecar = state.sidecar.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = sidecar.lock().map_err(|_| "lock sidecar".to_string())?;
+        guard.request::<T>(method, params).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("Error task sidecar: {e}"))?
 }
 
 #[tauri::command]
-fn toggle_dictation(state: tauri::State<AppState>) -> Result<ToggleResult, String> {
-    let mut sidecar = state.sidecar.lock().map_err(|_| "lock sidecar".to_string())?;
-    sidecar
-        .request::<ToggleResult>("toggle_dictation", json!({}))
-        .map_err(|e| e.to_string())
+async fn init_app(state: tauri::State<'_, AppState>) -> Result<serde_json::Value, String> {
+    call_sidecar::<serde_json::Value>(state, "load_app_state", json!({})).await
 }
 
 #[tauri::command]
-fn save_settings(state: tauri::State<AppState>, config: serde_json::Value) -> Result<serde_json::Value, String> {
-    let mut sidecar = state.sidecar.lock().map_err(|_| "lock sidecar".to_string())?;
-    sidecar
-        .request::<serde_json::Value>("save_config", json!({ "config": config }))
-        .map_err(|e| e.to_string())
+async fn toggle_dictation(state: tauri::State<'_, AppState>) -> Result<ToggleResult, String> {
+    call_sidecar::<ToggleResult>(state, "toggle_dictation", json!({})).await
 }
 
 #[tauri::command]
-fn set_hotkey(state: tauri::State<AppState>, hotkey: String) -> Result<serde_json::Value, String> {
-    let mut sidecar = state.sidecar.lock().map_err(|_| "lock sidecar".to_string())?;
-    sidecar
-        .request::<serde_json::Value>("set_hotkey", json!({ "hotkey": hotkey }))
-        .map_err(|e| e.to_string())
+async fn save_settings(
+    state: tauri::State<'_, AppState>,
+    config: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    call_sidecar::<serde_json::Value>(state, "save_config", json!({ "config": config })).await
 }
 
 #[tauri::command]
-fn get_history(state: tauri::State<AppState>, limit: u32) -> Result<serde_json::Value, String> {
-    let mut sidecar = state.sidecar.lock().map_err(|_| "lock sidecar".to_string())?;
-    sidecar
-        .request::<serde_json::Value>("get_history", json!({ "limit": limit }))
-        .map_err(|e| e.to_string())
+async fn set_hotkey(state: tauri::State<'_, AppState>, hotkey: String) -> Result<serde_json::Value, String> {
+    call_sidecar::<serde_json::Value>(state, "set_hotkey", json!({ "hotkey": hotkey })).await
 }
 
 #[tauri::command]
-fn get_metrics(state: tauri::State<AppState>, last_n: u32) -> Result<serde_json::Value, String> {
-    let mut sidecar = state.sidecar.lock().map_err(|_| "lock sidecar".to_string())?;
-    sidecar
-        .request::<serde_json::Value>("get_recent_metrics", json!({ "last_n": last_n }))
-        .map_err(|e| e.to_string())
+async fn get_history(state: tauri::State<'_, AppState>, limit: u32) -> Result<serde_json::Value, String> {
+    call_sidecar::<serde_json::Value>(state, "get_history", json!({ "limit": limit })).await
+}
+
+#[tauri::command]
+async fn get_metrics(state: tauri::State<'_, AppState>, last_n: u32) -> Result<serde_json::Value, String> {
+    call_sidecar::<serde_json::Value>(state, "get_recent_metrics", json!({ "last_n": last_n })).await
 }
 
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
-            let manager = SidecarManager::new(app.handle().clone()).map_err(|e| {
+            let mut manager = SidecarManager::new(app.handle().clone()).map_err(|e| {
                 let msg = format!("No se pudo iniciar sidecar: {e}");
                 std::io::Error::new(std::io::ErrorKind::Other, msg)
             })?;
+            manager
+                .request::<serde_json::Value>("health", json!({}))
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Sidecar health failed: {e}")))?;
             app.manage(AppState {
-                sidecar: Mutex::new(manager),
+                sidecar: Arc::new(Mutex::new(manager)),
             });
             Ok(())
         })

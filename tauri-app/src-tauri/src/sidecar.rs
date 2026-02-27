@@ -17,7 +17,7 @@ struct PendingResponse {
 }
 
 pub struct SidecarManager {
-    _child: Child,
+    child: Child,
     stdin: ChildStdin,
     pending: Arc<Mutex<HashMap<String, PendingResponse>>>,
 }
@@ -108,13 +108,17 @@ impl SidecarManager {
         });
 
         Ok(Self {
-            _child: child,
+            child,
             stdin,
             pending,
         })
     }
 
     pub fn request<T: DeserializeOwned>(&mut self, method: &str, params: Value) -> Result<T> {
+        if let Some(status) = self.child.try_wait().context("No se pudo verificar sidecar")? {
+            return Err(anyhow!(format!("Sidecar Python finalizado: {status}")));
+        }
+
         let id = Uuid::new_v4().to_string();
         let payload = json!({
             "id": id,
@@ -133,9 +137,21 @@ impl SidecarManager {
             .context("No se pudo escribir request")?;
         self.stdin.flush().context("No se pudo flush request")?;
 
-        let response = rx
-            .recv_timeout(Duration::from_secs(90))
-            .context("Timeout esperando respuesta sidecar")?;
+        let timeout = match method {
+            "load_app_state" | "health" => Duration::from_secs(12),
+            "toggle_dictation" => Duration::from_secs(180),
+            _ => Duration::from_secs(30),
+        };
+
+        let response = match rx.recv_timeout(timeout) {
+            Ok(response) => response,
+            Err(_) => {
+                if let Ok(mut table) = self.pending.lock() {
+                    table.remove(&id);
+                }
+                return Err(anyhow!(format!("Timeout esperando respuesta sidecar ({method})")));
+            }
+        };
 
         let ok = response.get("ok").and_then(|v| v.as_bool()).unwrap_or(false);
         if !ok {
