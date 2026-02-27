@@ -1,11 +1,17 @@
-# Crea/repara accesos directos para nombre clasico y nombre v2.
+# Crea/repara accesos directos y apunta el principal a Tauri.
 $projectDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$tauriTargetScript = Join-Path $projectDir "start_voz_tauri_silent.vbs"
 $qtTargetScript = Join-Path $projectDir "start_voz_qt_silent.vbs"
 
-if (-not (Test-Path $qtTargetScript)) {
-    Write-Host "[ERROR] No se encontro start_voz_qt_silent.vbs en: $projectDir" -ForegroundColor Red
+if (-not (Test-Path $tauriTargetScript)) {
+    Write-Host "[ERROR] No se encontro start_voz_tauri_silent.vbs en: $projectDir" -ForegroundColor Red
     pause
     exit 1
+}
+
+if (-not (Test-Path $qtTargetScript)) {
+    Write-Host "[WARN] No se encontro start_voz_qt_silent.vbs en: $projectDir" -ForegroundColor Yellow
+    Write-Host "Se creara solo el acceso directo de Tauri." -ForegroundColor Yellow
 }
 
 $desktop = [Environment]::GetFolderPath("Desktop")
@@ -15,10 +21,18 @@ $wsh = New-Object -ComObject WScript.Shell
 $shortcuts = @(
     @{
         Name = "Voice Stall v2.lnk"
-        Script = $qtTargetScript
-        Description = "Voice Stall v2 - UI Qt moderna"
+        Script = $tauriTargetScript
+        Description = "Voice Stall v2 - Tauri"
     }
 )
+
+if (Test-Path $qtTargetScript) {
+    $shortcuts += @{
+        Name = "Voice Stall Qt (fallback).lnk"
+        Script = $qtTargetScript
+        Description = "Voice Stall Qt fallback"
+    }
+}
 
 foreach ($item in $shortcuts) {
     $shortcutPath = Join-Path $desktop $item.Name
@@ -38,5 +52,6 @@ foreach ($item in $shortcuts) {
 
 Write-Host "------------------------------------------------" -ForegroundColor Cyan
 Write-Host "Accesos directos listos." -ForegroundColor Green
+Write-Host "Principal: Voice Stall v2.lnk (Tauri)" -ForegroundColor Green
 Write-Host "------------------------------------------------" -ForegroundColor Cyan
 Start-Sleep -Seconds 2

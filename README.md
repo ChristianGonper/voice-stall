@@ -51,6 +51,14 @@ npm install
 npm run tauri dev
 ```
 
+Lanzadores locales Tauri:
+
+```powershell
+.\start_voz_tauri.cmd
+.\start_voz_tauri_silent.vbs
+.\crear_acceso_directo_v2.ps1   # Reapunta Voice Stall v2.lnk a Tauri
+```
+
 Backend sidecar:
 - `python_backend.py` (protocolo JSON por `stdin/stdout`)
 - Reusa `engine.py`, `recorder.py`, `dictation_service.py` y `app_storage.py`

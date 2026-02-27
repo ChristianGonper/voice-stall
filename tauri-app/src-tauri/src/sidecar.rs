@@ -3,6 +3,7 @@ use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
+use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, Command, Stdio};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
@@ -22,23 +23,45 @@ pub struct SidecarManager {
 }
 
 impl SidecarManager {
+    fn resolve_python_executable(repo_root: &Path) -> (String, Vec<String>) {
+        let venv_windows = repo_root.join(".venv").join("Scripts").join("python.exe");
+        if venv_windows.exists() {
+            return (venv_windows.to_string_lossy().to_string(), vec![]);
+        }
+
+        let venv_unix = repo_root.join(".venv").join("bin").join("python");
+        if venv_unix.exists() {
+            return (venv_unix.to_string_lossy().to_string(), vec![]);
+        }
+
+        ("python".to_string(), vec![])
+    }
+
     pub fn new(app: AppHandle) -> Result<Self> {
-        let sidecar_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        let repo_root: PathBuf = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("..")
-            .join("..")
-            .join("python_backend.py");
+            .join("..");
+        let sidecar_path = repo_root.join("python_backend.py");
 
         if !sidecar_path.exists() {
             return Err(anyhow!("No se encontro python_backend.py en {}", sidecar_path.display()));
         }
 
-        let mut child = Command::new("python")
-            .arg(sidecar_path)
+        let (python_exec, python_args) = Self::resolve_python_executable(&repo_root);
+        let mut cmd = Command::new(&python_exec);
+        cmd.args(python_args)
+            .arg(&sidecar_path)
+            .current_dir(&repo_root)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .context("No se pudo iniciar sidecar Python")?;
+            .stderr(Stdio::piped());
+        let mut child = cmd.spawn().with_context(|| {
+            format!(
+                "No se pudo iniciar sidecar Python (exec: {}, script: {})",
+                python_exec,
+                sidecar_path.display()
+            )
+        })?;
 
         let stdin = child.stdin.take().context("No stdin sidecar")?;
         let stdout = child.stdout.take().context("No stdout sidecar")?;
