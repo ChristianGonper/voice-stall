@@ -3,6 +3,8 @@ import { listen } from "@tauri-apps/api/event";
 import { getMetrics, initApp, saveSettings, setHotkey, toggleDictation } from "./api";
 import type { AppStateDto, FullConfig, MetricsSummary, StatusEvent } from "./types";
 
+type TabKey = "control" | "settings" | "history" | "metrics";
+
 const STATUS_LABELS: Record<string, string> = {
   idle: "IDLE",
   loading: "LOAD",
@@ -18,6 +20,60 @@ const EMPTY_METRICS: MetricsSummary = {
   avg_paste_ms: 0,
 };
 
+function statusTone(status: string): "idle" | "recording" | "processing" | "error" {
+  if (status === "recording") {
+    return "recording";
+  }
+  if (status === "processing" || status === "loading") {
+    return "processing";
+  }
+  if (status === "error") {
+    return "error";
+  }
+  return "idle";
+}
+
+function WaveBars({ status }: { status: string }) {
+  const tone = statusTone(status);
+  const bars = Array.from({ length: 12 });
+  return (
+    <div className={`wave wave-${tone}`}>
+      {bars.map((_, index) => (
+        <span
+          key={index}
+          className="wave-bar"
+          style={{ animationDelay: `${index * 0.08}s` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function StatusOverlay({
+  visible,
+  status,
+  statusMessage,
+}: {
+  visible: boolean;
+  status: string;
+  statusMessage: string;
+}) {
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    <div className={`overlay overlay-${statusTone(status)}`}>
+      <div className="overlay-head">
+        <span className="dot" />
+        <strong>{STATUS_LABELS[status] ?? status.toUpperCase()}</strong>
+      </div>
+      <WaveBars status={status} />
+      <div className="overlay-msg">{statusMessage}</div>
+    </div>
+  );
+}
+
 export function App() {
   const [ready, setReady] = useState(false);
   const [bootError, setBootError] = useState<string | null>(null);
@@ -28,6 +84,9 @@ export function App() {
   const [metrics, setMetrics] = useState<MetricsSummary>(EMPTY_METRICS);
   const [newDictKey, setNewDictKey] = useState("");
   const [newDictValue, setNewDictValue] = useState("");
+  const [tab, setTab] = useState<TabKey>("control");
+  const [miniMode, setMiniMode] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(true);
 
   const loadInitialState = async () => {
     const state: AppStateDto = await initApp();
@@ -130,147 +189,220 @@ export function App() {
   };
 
   if (!ready) {
-    return <div className="app">Cargando...</div>;
+    return <div className="shell">Cargando...</div>;
   }
 
   if (bootError || !config) {
     return (
-      <div className="app">
-        <h2 style={{ marginTop: 0 }}>Voice Stall Tauri</h2>
-        <p style={{ color: "#ffb8b8" }}>Error de inicializacion: {bootError ?? "No se pudo cargar estado"}</p>
-        <div className="row">
-          <button
-            className="primary"
-            onClick={() => {
-              setReady(false);
-              setStatus("loading");
-              setStatusMessage("Reintentando...");
-              loadInitialState().catch((err) => {
-                setStatus("error");
-                setStatusMessage(`Error init: ${String(err)}`);
-                setBootError(String(err));
-                setReady(true);
-              });
-            }}
-          >
-            Reintentar
-          </button>
+      <div className="shell">
+        <div className="app-card">
+          <h2 style={{ marginTop: 0 }}>Voice Stall Tauri</h2>
+          <p style={{ color: "#ffb8b8" }}>Error de inicializacion: {bootError ?? "No se pudo cargar estado"}</p>
+          <div className="row">
+            <button
+              className="primary"
+              onClick={() => {
+                setReady(false);
+                setStatus("loading");
+                setStatusMessage("Reintentando...");
+                loadInitialState().catch((err) => {
+                  setStatus("error");
+                  setStatusMessage(`Error init: ${String(err)}`);
+                  setBootError(String(err));
+                  setReady(true);
+                });
+              }}
+            >
+              Reintentar
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="app">
-      <div className="row">
-        <h2 style={{ margin: 0 }}>Voice Stall Tauri</h2>
-        <span className="state">{STATUS_LABELS[status] ?? status.toUpperCase()}</span>
-      </div>
-      <p>{statusMessage}</p>
-      <p>Hotkey: {hotkeyLabel}</p>
-      <div className="row">
-        <button className="primary" onClick={onToggle}>
-          {status === "recording" ? "Detener dictado" : "Iniciar dictado"}
-        </button>
-      </div>
-
-      <div className="panel">
-        <h3>Ajustes</h3>
-        <div className="row">
-          <label>Hotkey</label>
-          <input
-            value={config.app.hotkey}
-            onChange={(e) => setConfig({ ...config, app: { ...config.app, hotkey: e.target.value } })}
-          />
-          <label>Modelo</label>
-          <select
-            value={config.engine.model_size}
-            onChange={(e) => setConfig({ ...config, engine: { ...config.engine, model_size: e.target.value } })}
-          >
-            <option value="large-v3-turbo">large-v3-turbo</option>
-            <option value="base">base</option>
-          </select>
-          <label>Idioma</label>
-          <select
-            value={config.engine.language}
-            onChange={(e) => setConfig({ ...config, engine: { ...config.engine, language: e.target.value } })}
-          >
-            <option value="auto">auto</option>
-            <option value="es">es</option>
-            <option value="en">en</option>
-          </select>
-        </div>
-        <div className="row">
-          <label>Perfil</label>
-          <select
-            value={config.engine.profile}
-            onChange={(e) => setConfig({ ...config, engine: { ...config.engine, profile: e.target.value } })}
-          >
-            <option value="fast">fast</option>
-            <option value="balanced">balanced</option>
-            <option value="accurate">accurate</option>
-          </select>
-          <label>Historial</label>
-          <input
-            type="number"
-            min={1}
-            max={20}
-            value={config.app.history_limit}
-            onChange={(e) =>
-              setConfig({ ...config, app: { ...config.app, history_limit: Number(e.target.value) || 5 } })
-            }
-          />
-          <label>
-            <input
-              type="checkbox"
-              checked={config.app.diagnostic_mode}
-              onChange={(e) =>
-                setConfig({ ...config, app: { ...config.app, diagnostic_mode: e.target.checked } })
-              }
-            />
-            Diagnostico
-          </label>
-        </div>
-
-        <div className="panel">
-          <h4>Diccionario</h4>
-          <div className="row">
-            <input
-              placeholder="Si digo..."
-              value={newDictKey}
-              onChange={(e) => setNewDictKey(e.target.value)}
-            />
-            <input
-              placeholder="Escribir..."
-              value={newDictValue}
-              onChange={(e) => setNewDictValue(e.target.value)}
-            />
-            <button onClick={addDictionaryItem}>Anadir</button>
+    <div className="shell">
+      {miniMode ? (
+        <div className="mini-card">
+          <div className="row between">
+            <strong>Voice Stall</strong>
+            <span className={`state state-${statusTone(status)}`}>{STATUS_LABELS[status] ?? status.toUpperCase()}</span>
           </div>
-          <div className="list">
-            {Object.entries(config.dictionary).map(([k, v]) => (
-              <div key={k}>
-                {k} -&gt; {v}
+          <div className="mini-message">{statusMessage}</div>
+          <WaveBars status={status} />
+          <div className="row between">
+            <button className="primary" onClick={onToggle}>
+              {status === "recording" ? "Detener" : "Dictar"}
+            </button>
+            <button onClick={() => setMiniMode(false)}>Expandir</button>
+          </div>
+          <div className="mini-hotkey">Hotkey: {hotkeyLabel}</div>
+        </div>
+      ) : (
+        <div className="app-card">
+          <div className="row between">
+            <div>
+              <h2 style={{ margin: 0 }}>Voice Stall Tauri</h2>
+              <div className="sub">Estado visible y control rapido de dictado</div>
+            </div>
+            <span className={`state state-${statusTone(status)}`}>{STATUS_LABELS[status] ?? status.toUpperCase()}</span>
+          </div>
+
+          <div className="toolbar">
+            <button className="primary" onClick={onToggle}>
+              {status === "recording" ? "Detener dictado" : "Iniciar dictado"}
+            </button>
+            <button onClick={() => setMiniMode(true)}>Modo mini</button>
+            <label className="row compact">
+              <input type="checkbox" checked={showOverlay} onChange={(e) => setShowOverlay(e.target.checked)} />
+              Overlay activo
+            </label>
+            <span className="hotkey-badge">{hotkeyLabel}</span>
+          </div>
+
+          <div className="panel hero">
+            <div className="hero-text">{statusMessage}</div>
+            <WaveBars status={status} />
+          </div>
+
+          <div className="tabs">
+            <button className={tab === "control" ? "tab active" : "tab"} onClick={() => setTab("control")}>Control</button>
+            <button className={tab === "settings" ? "tab active" : "tab"} onClick={() => setTab("settings")}>Ajustes</button>
+            <button className={tab === "history" ? "tab active" : "tab"} onClick={() => setTab("history")}>Historial</button>
+            <button className={tab === "metrics" ? "tab active" : "tab"} onClick={() => setTab("metrics")}>Metricas</button>
+          </div>
+
+          {tab === "control" && (
+            <div className="panel">
+              <h3>Control rapido</h3>
+              <p>La app puede quedarse en modo mini para no ocupar espacio y seguir mostrando estado.</p>
+              <div className="row">
+                <button className="primary" onClick={onToggle}>
+                  {status === "recording" ? "Detener dictado" : "Iniciar dictado"}
+                </button>
+                <button onClick={() => setMiniMode(true)}>Pasar a modo mini</button>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {tab === "settings" && (
+            <div className="panel">
+              <h3>Ajustes</h3>
+              <div className="grid-2">
+                <label>
+                  Hotkey
+                  <input
+                    value={config.app.hotkey}
+                    onChange={(e) => setConfig({ ...config, app: { ...config.app, hotkey: e.target.value } })}
+                  />
+                </label>
+                <label>
+                  Historial
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={config.app.history_limit}
+                    onChange={(e) =>
+                      setConfig({ ...config, app: { ...config.app, history_limit: Number(e.target.value) || 5 } })
+                    }
+                  />
+                </label>
+                <label>
+                  Modelo
+                  <select
+                    value={config.engine.model_size}
+                    onChange={(e) => setConfig({ ...config, engine: { ...config.engine, model_size: e.target.value } })}
+                  >
+                    <option value="large-v3-turbo">large-v3-turbo</option>
+                    <option value="base">base</option>
+                  </select>
+                </label>
+                <label>
+                  Idioma
+                  <select
+                    value={config.engine.language}
+                    onChange={(e) => setConfig({ ...config, engine: { ...config.engine, language: e.target.value } })}
+                  >
+                    <option value="auto">auto</option>
+                    <option value="es">es</option>
+                    <option value="en">en</option>
+                  </select>
+                </label>
+                <label>
+                  Perfil
+                  <select
+                    value={config.engine.profile}
+                    onChange={(e) => setConfig({ ...config, engine: { ...config.engine, profile: e.target.value } })}
+                  >
+                    <option value="fast">fast</option>
+                    <option value="balanced">balanced</option>
+                    <option value="accurate">accurate</option>
+                  </select>
+                </label>
+                <label className="row compact">
+                  <input
+                    type="checkbox"
+                    checked={config.app.diagnostic_mode}
+                    onChange={(e) =>
+                      setConfig({ ...config, app: { ...config.app, diagnostic_mode: e.target.checked } })
+                    }
+                  />
+                  Diagnostico
+                </label>
+              </div>
+
+              <div className="panel nested">
+                <h4>Diccionario</h4>
+                <div className="row">
+                  <input
+                    placeholder="Si digo..."
+                    value={newDictKey}
+                    onChange={(e) => setNewDictKey(e.target.value)}
+                  />
+                  <input
+                    placeholder="Escribir..."
+                    value={newDictValue}
+                    onChange={(e) => setNewDictValue(e.target.value)}
+                  />
+                  <button onClick={addDictionaryItem}>Anadir</button>
+                </div>
+                <div className="list small">
+                  {Object.entries(config.dictionary).map(([k, v]) => (
+                    <div key={k}>
+                      {k} -&gt; {v}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button className="primary" onClick={onSave}>Guardar configuracion</button>
+            </div>
+          )}
+
+          {tab === "history" && (
+            <div className="panel">
+              <h3>Historial</h3>
+              <div className="list">{historyText.join("\n\n") || "Sin historial"}</div>
+            </div>
+          )}
+
+          {tab === "metrics" && (
+            <div className="panel">
+              <h3>Metricas</h3>
+              <div className="metric-grid">
+                <div className="metric-box"><span>Ciclos</span><strong>{metrics.count}</strong></div>
+                <div className="metric-box"><span>Total</span><strong>{metrics.avg_total_ms.toFixed(1)} ms</strong></div>
+                <div className="metric-box"><span>STT</span><strong>{metrics.avg_transcribe_ms.toFixed(1)} ms</strong></div>
+                <div className="metric-box"><span>Pegado</span><strong>{metrics.avg_paste_ms.toFixed(1)} ms</strong></div>
+              </div>
+            </div>
+          )}
         </div>
+      )}
 
-        <button onClick={onSave}>Guardar configuracion</button>
-      </div>
-
-      <div className="panel">
-        <h3>Metricas</h3>
-        <div>Ciclos: {metrics.count}</div>
-        <div>Total: {metrics.avg_total_ms.toFixed(1)} ms</div>
-        <div>STT: {metrics.avg_transcribe_ms.toFixed(1)} ms</div>
-        <div>Pegado: {metrics.avg_paste_ms.toFixed(1)} ms</div>
-      </div>
-
-      <div className="panel">
-        <h3>Historial</h3>
-        <div className="list">{historyText.join("\n\n") || "Sin historial"}</div>
-      </div>
+      <StatusOverlay visible={showOverlay} status={status} statusMessage={statusMessage} />
     </div>
   );
 }
