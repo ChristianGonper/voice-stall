@@ -26,15 +26,24 @@ impl SidecarManager {
     fn resolve_python_executable(repo_root: &Path) -> (String, Vec<String>) {
         let venv_windows = repo_root.join(".venv").join("Scripts").join("python.exe");
         if venv_windows.exists() {
-            return (venv_windows.to_string_lossy().to_string(), vec![]);
+            return (
+                venv_windows.to_string_lossy().to_string(),
+                vec!["-X".to_string(), "utf8".to_string()],
+            );
         }
 
         let venv_unix = repo_root.join(".venv").join("bin").join("python");
         if venv_unix.exists() {
-            return (venv_unix.to_string_lossy().to_string(), vec![]);
+            return (
+                venv_unix.to_string_lossy().to_string(),
+                vec!["-X".to_string(), "utf8".to_string()],
+            );
         }
 
-        ("python".to_string(), vec![])
+        (
+            "python".to_string(),
+            vec!["-X".to_string(), "utf8".to_string()],
+        )
     }
 
     pub fn new(app: AppHandle) -> Result<Self> {
@@ -52,6 +61,8 @@ impl SidecarManager {
         cmd.args(python_args)
             .arg(&sidecar_path)
             .current_dir(&repo_root)
+            .env("PYTHONUTF8", "1")
+            .env("PYTHONIOENCODING", "utf-8")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());

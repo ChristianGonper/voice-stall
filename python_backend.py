@@ -286,6 +286,12 @@ class SidecarServer:
 
 
 def main():
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
     server = SidecarServer(os.path.dirname(os.path.abspath(__file__)))
     try:
         for raw_line in sys.stdin:
