@@ -10,6 +10,12 @@ wheels/
 .venv
 .vscode/
 .idea/
+node_modules/
+tauri-app/node_modules/
+tauri-app/dist/
+tauri-app/src-tauri/target/
+.agents/
+tauri-app/src-tauri/gen/
 
 # Test and tooling caches
 .pytest_cache/

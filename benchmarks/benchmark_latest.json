@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-02-27T20:37:40",
+  "iterations": 2000,
+  "dictation_service": {
+    "n": 2000,
+    "mean_ms": 0.001,
+    "median_ms": 0.001,
+    "p95_ms": 0.001,
+    "min_ms": 0.001,
+    "max_ms": 0.007
+  },
+  "dictionary_apply": {
+    "n": 2000,
+    "mean_ms": 0.005,
+    "median_ms": 0.005,
+    "p95_ms": 0.005,
+    "min_ms": 0.005,
+    "max_ms": 0.01
+  }
+}

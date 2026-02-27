@@ -4,7 +4,6 @@ import sys
 import threading
 import time
 import ctypes
-from datetime import datetime
 
 import pyautogui
 import pyperclip
@@ -41,6 +40,8 @@ from PySide6.QtWidgets import (
 )
 from pynput import keyboard
 
+from app_storage import AppStorage
+from dictation_service import DictationService
 from engine import STTEngine
 from recorder import AudioRecorder
 
@@ -95,10 +96,6 @@ class SettingsDialog(QDialog):
         self.profile_combo.addItems(["fast", "balanced", "accurate"])
         self.profile_combo.setCurrentText(str(engine_cfg.get("profile", "balanced")).lower())
         form.addRow("Perfil", self.profile_combo)
-
-        self.use_llm = QCheckBox("Refinar con LLM local (Ollama)")
-        self.use_llm.setChecked(bool(engine_cfg.get("use_llm", False)))
-        form.addRow("LLM", self.use_llm)
 
         self.diag_mode = QCheckBox("Activar metricas de diagnostico")
         self.diag_mode.setChecked(bool(app_cfg.get("diagnostic_mode", False)))
@@ -320,7 +317,6 @@ class SettingsDialog(QDialog):
         engine_cfg["model_size"] = self.model_combo.currentText()
         engine_cfg["language"] = self.lang_combo.currentText()
         engine_cfg["profile"] = self.profile_combo.currentText()
-        engine_cfg["use_llm"] = bool(self.use_llm.isChecked())
 
         self.cfg["app"] = app_cfg
         self.cfg["engine"] = engine_cfg
@@ -332,20 +328,21 @@ class VoiceStallQtApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.config_path = os.path.join(self.base_dir, "config.json")
-        self.default_config_path = os.path.join(self.base_dir, "config.default.json")
-        self.history_path = os.path.join(self.base_dir, "dictation_history.json")
-        self.timing_log_path = os.path.join(self.base_dir, "timings.log")
+        self.storage = AppStorage(self.base_dir)
+        self.timing_log_path = self.storage.timing_log_path
         self.cli_diagnostic_forced = any(arg in ("--diag", "--diagnostic") for arg in sys.argv[1:])
 
         self.recorder = AudioRecorder()
         self.engine = None
+        self.dictation_service = None
         self.is_recording = False
         self.is_processing = False
+        self.state_lock = threading.Lock()
         self.hotkey_listener = None
         self.history = []
 
-        self.app_config = self._load_app_settings()
+        self.app_config = self.storage.load_app_settings()
+        self.history = self.storage.load_history(int(self.app_config.get("history_limit", 5)))
         if self.cli_diagnostic_forced:
             self.app_config["diagnostic_mode"] = True
 
@@ -481,112 +478,27 @@ class VoiceStallQtApp(QMainWindow):
         self.fade_in.start()
 
     def _tick_status(self):
-        if self.current_status not in {"loading", "processing", "refining"}:
+        if self.current_status not in {"loading", "processing"}:
             return
         self._dots = (self._dots + 1) % 4
         self.status.setText(f"{self.status_base_text}{'.' * self._dots}")
 
-    def _default_config(self):
-        return {
-            "engine": {
-                "model_size": "large-v3-turbo",
-                "language": "auto",
-                "compute_type": "float16",
-                "initial_prompt": "Dictado profesional en español con terminología técnica en inglés (Spanglish).",
-                "use_llm": False,
-                "profile": "balanced",
-            },
-            "app": {
-                "hotkey": "ctrl+alt+s",
-                "history_limit": 5,
-                "timing_log_max_kb": 512,
-                "diagnostic_mode": False,
-            },
-            "dictionary": {},
-        }
-
     def _safe_load_config(self):
-        default_cfg = self._default_config()
-        config_source = self.config_path if os.path.exists(self.config_path) else self.default_config_path
-        if not os.path.exists(config_source):
-            return default_cfg
-        try:
-            with open(config_source, "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-        except Exception:
-            return default_cfg
-        cfg.setdefault("engine", default_cfg["engine"])
-        cfg.setdefault("dictionary", {})
-        cfg.setdefault("app", default_cfg["app"])
-        return cfg
+        return self.storage.load_config()
 
     def _save_config(self, cfg):
-        with open(self.config_path, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, indent=2, ensure_ascii=False)
-
-    def _load_app_settings(self):
-        cfg = self._safe_load_config()
-        app_cfg = cfg.setdefault("app", {})
-        app_cfg.setdefault("hotkey", "ctrl+alt+s")
-        app_cfg.setdefault("history_limit", 5)
-        app_cfg.setdefault("timing_log_max_kb", 512)
-        app_cfg.setdefault("diagnostic_mode", False)
-        cfg["app"] = app_cfg
-        self._save_config(cfg)
-        self.history = self._load_history(app_cfg["history_limit"])
-        return app_cfg
-
-    def _load_history(self, history_limit):
-        if not os.path.exists(self.history_path):
-            return []
-        try:
-            with open(self.history_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            if isinstance(data, list):
-                return data[:history_limit]
-        except Exception:
-            return []
-        return []
-
-    def _save_history(self):
-        try:
-            with open(self.history_path, "w", encoding="utf-8") as f:
-                json.dump(self.history, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            print(f"No se pudo guardar historial: {e}")
+        self.storage.save_config(cfg)
 
     def _push_history(self, text):
         limit = int(self.app_config.get("history_limit", 5))
-        entry = {"ts": datetime.now().isoformat(timespec="seconds"), "text": text}
-        self.history.insert(0, entry)
-        self.history = self.history[:limit]
-        self._save_history()
-
-    def _rotate_timing_log_if_needed(self):
-        max_kb = int(self.app_config.get("timing_log_max_kb", 512))
-        max_bytes = max_kb * 1024
-        if not os.path.exists(self.timing_log_path):
-            return
-        if os.path.getsize(self.timing_log_path) <= max_bytes:
-            return
-        backup_path = f"{self.timing_log_path}.1"
-        try:
-            if os.path.exists(backup_path):
-                os.remove(backup_path)
-            os.replace(self.timing_log_path, backup_path)
-        except Exception as e:
-            print(f"No se pudo rotar log de tiempos: {e}")
+        self.history = self.storage.push_history(self.history, text, limit)
 
     def _log_timing(self, payload):
-        if not self.app_config.get("diagnostic_mode", False):
-            return
-        payload["ts"] = datetime.now().isoformat(timespec="seconds")
-        self._rotate_timing_log_if_needed()
-        try:
-            with open(self.timing_log_path, "a", encoding="utf-8") as f:
-                f.write(json.dumps(payload, ensure_ascii=False) + "\n")
-        except Exception as e:
-            print(f"No se pudo escribir timing log: {e}")
+        self.storage.log_timing(
+            payload=payload,
+            diagnostic_mode=bool(self.app_config.get("diagnostic_mode", False)),
+            max_kb=int(self.app_config.get("timing_log_max_kb", 512)),
+        )
 
     def _normalize_hotkey(self, hotkey_value):
         normalized = hotkey_value.strip().lower().replace(" ", "")
@@ -635,7 +547,7 @@ class VoiceStallQtApp(QMainWindow):
         new_cfg["app"]["hotkey"] = self._normalize_hotkey(new_cfg["app"].get("hotkey", "ctrl+alt+s"))
         self._save_config(new_cfg)
         self.app_config = new_cfg["app"]
-        self.history = self._load_history(int(self.app_config.get("history_limit", 5)))
+        self.history = self.storage.load_history(int(self.app_config.get("history_limit", 5)))
         self._restart_hotkey_listener()
 
         new_model = str(new_cfg.get("engine", {}).get("model_size", "large-v3-turbo"))
@@ -650,34 +562,41 @@ class VoiceStallQtApp(QMainWindow):
         self.signals.status_changed.emit("loading", "Cargando motor...")
         try:
             self.engine = STTEngine()
+            self.dictation_service = DictationService(self.engine)
             self.signals.status_changed.emit("idle", "Listo para dictar")
         except Exception as e:
             self.engine = None
+            self.dictation_service = None
             self.signals.status_changed.emit("error", f"Error cargando motor: {e}")
 
     def toggle_dictation(self):
-        if self.is_processing:
-            return
-        if not self.is_recording:
+        with self.state_lock:
+            if self.is_processing:
+                return
+            should_start = not self.is_recording
+        if should_start:
             self.start_recording()
         else:
             self.stop_recording()
 
     def start_recording(self):
-        if self.engine is None:
+        if self.engine is None or self.dictation_service is None:
             self.signals.status_changed.emit("loading", "Motor aun no disponible")
             return
         if self.recorder.start_recording():
-            self.is_recording = True
+            with self.state_lock:
+                self.is_recording = True
             self.signals.status_changed.emit("recording", "Escuchando...")
 
     def stop_recording(self):
-        self.is_recording = False
-        self.is_processing = True
+        with self.state_lock:
+            self.is_recording = False
+            self.is_processing = True
         self.signals.status_changed.emit("processing", "Procesando audio...")
         audio_file = self.recorder.stop_recording()
         if not audio_file:
-            self.is_processing = False
+            with self.state_lock:
+                self.is_processing = False
             self.signals.status_changed.emit("idle", "Listo para dictar")
             return
         threading.Thread(target=self.process_audio, args=(audio_file,), daemon=True).start()
@@ -686,16 +605,13 @@ class VoiceStallQtApp(QMainWindow):
         t0 = time.perf_counter()
         transcribe_ms = 0.0
         paste_ms = 0.0
-        refine_started = False
         text = ""
-        old_llm = self.engine.use_llm if self.engine else False
         try:
-            if self.engine is None:
+            if self.engine is None or self.dictation_service is None:
                 return
-            self.engine.use_llm = False
-            t_transcribe0 = time.perf_counter()
-            text = self.engine.transcribe(audio_file)
-            transcribe_ms = (time.perf_counter() - t_transcribe0) * 1000
+            cycle = self.dictation_service.transcribe(audio_file)
+            transcribe_ms = cycle.transcribe_ms
+            text = cycle.text
             if text:
                 t_paste0 = time.perf_counter()
                 pyperclip.copy(text)
@@ -704,14 +620,9 @@ class VoiceStallQtApp(QMainWindow):
                 pyautogui.press("space")
                 paste_ms = (time.perf_counter() - t_paste0) * 1000
                 self._push_history(text)
-                if old_llm and not text.lower().startswith("abre"):
-                    refine_started = True
-                    threading.Thread(target=self.refine_and_replace, args=(text,), daemon=True).start()
         except Exception as e:
             self.signals.status_changed.emit("error", f"Error dictado: {e}")
         finally:
-            if self.engine is not None:
-                self.engine.use_llm = old_llm
             if audio_file and os.path.exists(audio_file):
                 try:
                     os.remove(audio_file)
@@ -725,33 +636,10 @@ class VoiceStallQtApp(QMainWindow):
                     "paste_ms": round(paste_ms, 2),
                     "total_ms": round(total_ms, 2),
                     "chars": len(text),
-                    "refine_started": refine_started,
                 }
             )
-            self.is_processing = False
-            if not refine_started:
-                self.signals.status_changed.emit("idle", "Listo para dictar")
-
-    def refine_and_replace(self, original_text):
-        self.signals.status_changed.emit("refining", "Refinando texto con IA...")
-        t0 = time.perf_counter()
-        try:
-            refined = self.engine.refine_with_llm(original_text)
-            if refined and refined.strip() != original_text.strip():
-                time.sleep(0.4)
-                chars = len(original_text) + 1
-                for _ in range(chars):
-                    pyautogui.press("backspace")
-                pyperclip.copy(refined)
-                time.sleep(0.05)
-                pyautogui.hotkey("ctrl", "v")
-                pyautogui.press("space")
-                self._push_history(refined)
-        except Exception as e:
-            print(f"Error en refinado: {e}")
-        finally:
-            total_ms = (time.perf_counter() - t0) * 1000
-            self._log_timing({"event": "refine_cycle", "total_ms": round(total_ms, 2), "chars": len(original_text)})
+            with self.state_lock:
+                self.is_processing = False
             self.signals.status_changed.emit("idle", "Listo para dictar")
 
     def _set_hotkey_text(self, hotkey_label):
@@ -784,14 +672,6 @@ class VoiceStallQtApp(QMainWindow):
                 "background:#2a3317;color:#dcf5bf;border:1px solid #607a35;border-radius:10px;padding:3px 10px;font-weight:700;"
             )
             self.action_btn.setText("Procesando...")
-            self.progress.setVisible(True)
-            self.status_timer.start()
-        elif status == "refining":
-            self.mode.setText("AI")
-            self.mode.setStyleSheet(
-                "background:#2b1f40;color:#e9d3ff;border:1px solid #6e53a8;border-radius:10px;padding:3px 10px;font-weight:700;"
-            )
-            self.action_btn.setText("Refinando...")
             self.progress.setVisible(True)
             self.status_timer.start()
         elif status == "loading":

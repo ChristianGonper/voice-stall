@@ -1,0 +1,319 @@
+import json
+import os
+import sys
+import threading
+import time
+import traceback
+from typing import Any
+
+import pyautogui
+import pyperclip
+from pynput import keyboard
+
+from app_storage import AppStorage
+from dictation_service import DictationService
+from engine import STTEngine
+from recorder import AudioRecorder
+
+
+class SidecarServer:
+    def __init__(self, base_dir: str):
+        self.base_dir = base_dir
+        self.storage = AppStorage(base_dir)
+        self.recorder = AudioRecorder()
+
+        self.engine = None
+        self.dictation_service = None
+
+        self.cfg = self.storage.load_config()
+        self.app_cfg = self.cfg.get("app", {})
+
+        self.hotkey_listener = None
+        self.state_lock = threading.Lock()
+        self.write_lock = threading.Lock()
+        self.is_recording = False
+        self.is_processing = False
+
+        self._restart_hotkey_listener()
+        self._emit_status("idle", "Listo para dictar")
+
+    def _write_json(self, payload: dict[str, Any]):
+        encoded = json.dumps(payload, ensure_ascii=False)
+        with self.write_lock:
+            sys.stdout.write(encoded + "\n")
+            sys.stdout.flush()
+
+    def _emit_event(self, event: str, payload: dict[str, Any]):
+        self._write_json({"event": event, "payload": payload})
+
+    def _emit_status(self, state: str, message: str):
+        self._emit_event("status", {"state": state, "message": message})
+
+    def _normalize_hotkey(self, value: str) -> str:
+        normalized = str(value or "ctrl+alt+s").strip().lower().replace(" ", "")
+        normalized = normalized.replace("control", "ctrl").replace("option", "alt")
+        if normalized.count("+") < 1:
+            return "ctrl+alt+s"
+        return normalized
+
+    def _hotkey_to_pynput(self, hotkey: str) -> str:
+        token_map = {"ctrl": "<ctrl>", "alt": "<alt>", "shift": "<shift>"}
+        return "+".join(token_map.get(t, t) for t in hotkey.split("+") if t)
+
+    def _on_hotkey_trigger(self):
+        try:
+            self.toggle_dictation()
+        except Exception as exc:  # pragma: no cover - safety path
+            self._emit_status("error", f"Error hotkey: {exc}")
+
+    def _restart_hotkey_listener(self):
+        hotkey = self._normalize_hotkey(self.app_cfg.get("hotkey", "ctrl+alt+s"))
+        self.app_cfg["hotkey"] = hotkey
+        if self.hotkey_listener is not None:
+            try:
+                self.hotkey_listener.stop()
+            except Exception:
+                pass
+            self.hotkey_listener = None
+
+        try:
+            self.hotkey_listener = keyboard.GlobalHotKeys({self._hotkey_to_pynput(hotkey): self._on_hotkey_trigger})
+            self.hotkey_listener.start()
+        except Exception as exc:
+            self.hotkey_listener = None
+            self._emit_status("error", f"Hotkey invalida: {exc}")
+
+    def _ensure_engine(self):
+        if self.engine is not None and self.dictation_service is not None:
+            return
+        self._emit_status("loading", "Cargando motor")
+        self.engine = STTEngine()
+        self.dictation_service = DictationService(self.engine)
+        self._emit_status("idle", "Listo para dictar")
+
+    def _compute_recent_metrics(self, last_n: int = 5) -> dict[str, Any]:
+        timing_log_path = self.storage.timing_log_path
+        if not os.path.exists(timing_log_path):
+            return {"count": 0, "avg_total_ms": 0.0, "avg_transcribe_ms": 0.0, "avg_paste_ms": 0.0}
+
+        rows = []
+        try:
+            with open(timing_log_path, "r", encoding="utf-8") as file_handle:
+                for line in file_handle:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        row = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if row.get("event") == "dictation_cycle":
+                        rows.append(row)
+        except Exception:
+            return {"count": 0, "avg_total_ms": 0.0, "avg_transcribe_ms": 0.0, "avg_paste_ms": 0.0}
+
+        recent = rows[-int(last_n) :]
+        if not recent:
+            return {"count": 0, "avg_total_ms": 0.0, "avg_transcribe_ms": 0.0, "avg_paste_ms": 0.0}
+
+        count = len(recent)
+        return {
+            "count": count,
+            "avg_total_ms": sum(float(r.get("total_ms", 0.0)) for r in recent) / count,
+            "avg_transcribe_ms": sum(float(r.get("transcribe_ms", 0.0)) for r in recent) / count,
+            "avg_paste_ms": sum(float(r.get("paste_ms", 0.0)) for r in recent) / count,
+        }
+
+    def _push_history(self, text: str):
+        limit = int(self.app_cfg.get("history_limit", 5))
+        self.storage.push_history(self.storage.load_history(limit), text, limit)
+
+    def _log_timing(self, payload: dict[str, Any]):
+        self.storage.log_timing(
+            payload=payload,
+            diagnostic_mode=bool(self.app_cfg.get("diagnostic_mode", False)),
+            max_kb=int(self.app_cfg.get("timing_log_max_kb", 512)),
+        )
+        self._emit_event("diag", payload)
+
+    def start_recording(self) -> dict[str, Any]:
+        with self.state_lock:
+            if self.is_processing:
+                return {"status": "processing", "message": "Procesando audio"}
+            if self.is_recording:
+                return {"status": "recording", "message": "Ya estaba grabando"}
+
+        self._ensure_engine()
+        started = self.recorder.start_recording()
+        if not started:
+            return {"status": "error", "message": "No se pudo iniciar grabacion"}
+
+        with self.state_lock:
+            self.is_recording = True
+        self._emit_status("recording", "Escuchando")
+        return {"status": "recording", "message": "Escuchando"}
+
+    def stop_and_transcribe(self) -> dict[str, Any]:
+        with self.state_lock:
+            if not self.is_recording:
+                return {"status": "idle", "message": "No habia grabacion activa"}
+            self.is_recording = False
+            self.is_processing = True
+
+        self._emit_status("processing", "Procesando audio")
+
+        audio_file = None
+        t0 = time.perf_counter()
+        transcribe_ms = 0.0
+        paste_ms = 0.0
+        text = ""
+        try:
+            audio_file = self.recorder.stop_recording()
+            if not audio_file:
+                return {"status": "idle", "message": "No se capturo audio"}
+
+            self._ensure_engine()
+            cycle = self.dictation_service.transcribe(audio_file)
+            transcribe_ms = cycle.transcribe_ms
+            text = cycle.text
+
+            if text:
+                t_paste0 = time.perf_counter()
+                pyperclip.copy(text)
+                time.sleep(0.05)
+                pyautogui.hotkey("ctrl", "v")
+                pyautogui.press("space")
+                paste_ms = (time.perf_counter() - t_paste0) * 1000
+                self._push_history(text)
+
+            return {"status": "idle", "message": "Listo para dictar", "text": text}
+        finally:
+            if audio_file and os.path.exists(audio_file):
+                try:
+                    os.remove(audio_file)
+                except Exception:
+                    pass
+
+            total_ms = (time.perf_counter() - t0) * 1000
+            self._log_timing(
+                {
+                    "event": "dictation_cycle",
+                    "transcribe_ms": round(transcribe_ms, 2),
+                    "paste_ms": round(paste_ms, 2),
+                    "total_ms": round(total_ms, 2),
+                    "chars": len(text),
+                }
+            )
+            with self.state_lock:
+                self.is_processing = False
+            self._emit_status("idle", "Listo para dictar")
+
+    def toggle_dictation(self) -> dict[str, Any]:
+        with self.state_lock:
+            currently_recording = self.is_recording
+        if currently_recording:
+            return self.stop_and_transcribe()
+        return self.start_recording()
+
+    def load_app_state(self) -> dict[str, Any]:
+        self.cfg = self.storage.load_config()
+        self.app_cfg = self.cfg.get("app", {})
+        history = self.storage.load_history(int(self.app_cfg.get("history_limit", 5)))
+        metrics = self._compute_recent_metrics(5)
+        return {
+            "config": self.cfg,
+            "history": history,
+            "metrics": metrics,
+            "status": "idle",
+        }
+
+    def save_config(self, config: dict[str, Any]) -> dict[str, Any]:
+        self.storage.save_config(config)
+        self.cfg = self.storage.load_config()
+        self.app_cfg = self.cfg.get("app", {})
+        self._restart_hotkey_listener()
+        if self.engine is not None:
+            self.engine.load_config(force=True)
+        return {"ok": True}
+
+    def set_hotkey(self, hotkey: str) -> dict[str, Any]:
+        self.cfg = self.storage.load_config()
+        app_cfg = self.cfg.setdefault("app", {})
+        app_cfg["hotkey"] = self._normalize_hotkey(hotkey)
+        self.cfg["app"] = app_cfg
+        self.storage.save_config(self.cfg)
+        self.app_cfg = app_cfg
+        self._restart_hotkey_listener()
+        return {"ok": True, "hotkey": app_cfg["hotkey"]}
+
+    def get_history(self, limit: int) -> list[dict[str, Any]]:
+        return self.storage.load_history(int(limit))
+
+    def get_recent_metrics(self, last_n: int) -> dict[str, Any]:
+        return self._compute_recent_metrics(int(last_n))
+
+    def handle(self, method: str, params: dict[str, Any]) -> Any:
+        if method == "health":
+            return {"ok": True}
+        if method == "load_app_state":
+            return self.load_app_state()
+        if method == "save_config":
+            return self.save_config(params.get("config", {}))
+        if method == "start_recording":
+            return self.start_recording()
+        if method == "stop_and_transcribe":
+            return self.stop_and_transcribe()
+        if method == "toggle_dictation":
+            return self.toggle_dictation()
+        if method == "set_hotkey":
+            return self.set_hotkey(str(params.get("hotkey", "ctrl+alt+s")))
+        if method == "get_history":
+            return self.get_history(int(params.get("limit", 10)))
+        if method == "get_recent_metrics":
+            return self.get_recent_metrics(int(params.get("last_n", 5)))
+        raise ValueError(f"Metodo no soportado: {method}")
+
+    def close(self):
+        try:
+            if self.hotkey_listener is not None:
+                self.hotkey_listener.stop()
+        except Exception:
+            pass
+        try:
+            self.recorder.cleanup()
+        except Exception:
+            pass
+
+
+def main():
+    server = SidecarServer(os.path.dirname(os.path.abspath(__file__)))
+    try:
+        for raw_line in sys.stdin:
+            line = raw_line.strip()
+            if not line:
+                continue
+            request_id = None
+            try:
+                req = json.loads(line)
+                request_id = req.get("id")
+                method = req.get("method")
+                params = req.get("params") or {}
+                result = server.handle(method, params)
+                server._write_json({"id": request_id, "ok": True, "result": result})
+            except Exception as exc:
+                error_payload = {
+                    "id": request_id,
+                    "ok": False,
+                    "error": {
+                        "code": "internal_error",
+                        "message": str(exc),
+                        "traceback": traceback.format_exc(limit=2),
+                    },
+                }
+                server._write_json(error_payload)
+    finally:
+        server.close()
+
+
+if __name__ == "__main__":
+    main()

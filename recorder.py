@@ -1,8 +1,11 @@
 import os
 import threading
 import wave
+import logging
 
 import pyaudio
+
+logger = logging.getLogger(__name__)
 
 
 class AudioRecorder:
@@ -36,25 +39,25 @@ class AudioRecorder:
                     self.frames.append(data)
                 except Exception as e:
                     self.record_error = e
-                    print(f"Error leyendo audio: {e}")
+                    logger.exception("Error leyendo audio.")
                     break
         except Exception as e:
             self.record_error = e
-            print(f"Error abriendo micrófono: {e}")
+            logger.exception("Error abriendo microfono.")
         finally:
             self.is_recording = False
             if stream is not None:
                 try:
                     stream.stop_stream()
                     stream.close()
-                except Exception as e:
-                    print(f"Error cerrando stream: {e}")
+                except Exception:
+                    logger.exception("Error cerrando stream.")
 
     def start_recording(self):
         if self.is_recording:
             return False
 
-        print("Grabando...")
+        logger.info("Grabando...")
         self.record_error = None
         self.is_recording = True
         self.frames = []
@@ -67,24 +70,24 @@ class AudioRecorder:
         if not self.is_recording and (self.thread is None or not self.thread.is_alive()):
             return None
 
-        print("Deteniendo grabación...")
+        logger.info("Deteniendo grabacion...")
         self.is_recording = False
 
         if self.thread and self.thread.is_alive():
             self.thread.join(timeout=2)
 
         if self.record_error is not None:
-            print(f"Grabación abortada: {self.record_error}")
+            logger.error("Grabacion abortada: %s", self.record_error)
             return None
 
         if not self.frames:
-            print("No se capturó audio.")
+            logger.warning("No se capturo audio.")
             return None
 
         try:
             self._save_file()
-        except Exception as e:
-            print(f"Error guardando audio: {e}")
+        except Exception:
+            logger.exception("Error guardando audio.")
             return None
 
         return self.filename
@@ -103,11 +106,11 @@ class AudioRecorder:
 
         try:
             self.p.terminate()
-        except Exception as e:
-            print(f"Error terminando PyAudio: {e}")
+        except Exception:
+            logger.exception("Error terminando PyAudio.")
 
         if os.path.exists(self.filename):
             try:
                 os.remove(self.filename)
-            except Exception as e:
-                print(f"Error borrando temporal: {e}")
+            except Exception:
+                logger.exception("Error borrando temporal.")
