@@ -16,6 +16,8 @@ tauri-app/dist/
 tauri-app/src-tauri/target/
 .agents/
 tauri-app/src-tauri/gen/
+tauri-app/tauri-launch.log
+tauri-app/.tauri_debug_built.marker
 
 # Test and tooling caches
 .pytest_cache/
