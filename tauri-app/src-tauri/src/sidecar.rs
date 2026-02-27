@@ -138,7 +138,7 @@ impl SidecarManager {
         self.stdin.flush().context("No se pudo flush request")?;
 
         let timeout = match method {
-            "load_app_state" | "health" => Duration::from_secs(12),
+            "load_app_state" | "health" => Duration::from_secs(30),
             "toggle_dictation" => Duration::from_secs(180),
             _ => Duration::from_secs(30),
         };
