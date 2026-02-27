@@ -1,10 +1,11 @@
-# Crea/repara accesos directos y apunta el principal a Tauri.
+# Crea/repara accesos directos y apunta el principal a Tauri (launcher visible).
 $projectDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$tauriTargetScript = Join-Path $projectDir "start_voz_tauri_silent.vbs"
+$tauriTargetScript = Join-Path $projectDir "start_voz_tauri.cmd"
+$tauriSilentTargetScript = Join-Path $projectDir "start_voz_tauri_silent.vbs"
 $qtTargetScript = Join-Path $projectDir "start_voz_qt_silent.vbs"
 
 if (-not (Test-Path $tauriTargetScript)) {
-    Write-Host "[ERROR] No se encontro start_voz_tauri_silent.vbs en: $projectDir" -ForegroundColor Red
+    Write-Host "[ERROR] No se encontro start_voz_tauri.cmd en: $projectDir" -ForegroundColor Red
     pause
     exit 1
 }
@@ -22,9 +23,17 @@ $shortcuts = @(
     @{
         Name = "Voice Stall v2.lnk"
         Script = $tauriTargetScript
-        Description = "Voice Stall v2 - Tauri"
+        Description = "Voice Stall v2 - Tauri (launcher visible)"
     }
 )
+
+if (Test-Path $tauriSilentTargetScript) {
+    $shortcuts += @{
+        Name = "Voice Stall v2 Silent.lnk"
+        Script = $tauriSilentTargetScript
+        Description = "Voice Stall v2 - Tauri (silent)"
+    }
+}
 
 if (Test-Path $qtTargetScript) {
     $shortcuts += @{
@@ -37,8 +46,17 @@ if (Test-Path $qtTargetScript) {
 foreach ($item in $shortcuts) {
     $shortcutPath = Join-Path $desktop $item.Name
     $shortcut = $wsh.CreateShortcut($shortcutPath)
-    $shortcut.TargetPath = "wscript.exe"
-    $shortcut.Arguments = "`"$($item.Script)`""
+    $ext = [IO.Path]::GetExtension($item.Script).ToLowerInvariant()
+    if ($ext -eq ".vbs") {
+        $shortcut.TargetPath = "wscript.exe"
+        $shortcut.Arguments = "`"$($item.Script)`""
+    } elseif ($ext -eq ".cmd" -or $ext -eq ".bat") {
+        $shortcut.TargetPath = "cmd.exe"
+        $shortcut.Arguments = "/c `"$($item.Script)`""
+    } else {
+        $shortcut.TargetPath = $item.Script
+        $shortcut.Arguments = ""
+    }
     $shortcut.WorkingDirectory = $projectDir
     $shortcut.Description = $item.Description
 
@@ -52,6 +70,6 @@ foreach ($item in $shortcuts) {
 
 Write-Host "------------------------------------------------" -ForegroundColor Cyan
 Write-Host "Accesos directos listos." -ForegroundColor Green
-Write-Host "Principal: Voice Stall v2.lnk (Tauri)" -ForegroundColor Green
+Write-Host "Principal: Voice Stall v2.lnk (Tauri visible)" -ForegroundColor Green
 Write-Host "------------------------------------------------" -ForegroundColor Cyan
 Start-Sleep -Seconds 2
