@@ -10,7 +10,8 @@ Aplicación local de dictado para Windows con `faster-whisper`, hotkey global y 
 
 - Rama canónica: `version-2.0`
 - App principal (v2): `main_qt.py` (PySide6)
-- Migración en curso: `tauri-app/` (Tauri + React + sidecar Python)
+- Migración avanzada: `tauri-app/` (Tauri + React + sidecar Python)
+- Nuevo Diseño: "Deep Night Minimalist" con bordes redondeados y opacidad total en contenido.
 
 ## Requisitos
 
@@ -97,11 +98,17 @@ Salida:
 - `recorder.py`: captura de audio y WAV temporal
 - `tests/`: tests unitarios
 
+## Diseño e Interfaz
+
+- **Concepto**: Minimalista, alto contraste, estética "Premium Dark".
+- **Transparencia**: Ventana flotante con bordes redondeados transparentes (efecto frameless). El contenido de la aplicación es 100% opaco para máxima legibilidad.
+- **Frameworks**: Soporte completo para Qt (estable) y Tauri (beta avanzada).
+
 ## Alcance actual
 
 - El dictado se procesa en una sola pasada STT + diccionario + pegado.
-- No hay comandos por voz para abrir aplicaciones/sitios (por ejemplo `abre ...`).
-- No hay refinado posterior con LLM/Ollama.
+- Soporte para perfiles de rendimiento (fast, balanced, accurate).
+- Diagnóstico en tiempo real y métricas de latencia.
 
 ## Privacidad
 

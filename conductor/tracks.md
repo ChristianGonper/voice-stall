@@ -4,5 +4,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Complete Tauri migration: Implement core dictation flow in React frontend**
+- [x] **Track: Complete Tauri migration: Implement core dictation flow in React frontend**
   *Link: [./tracks/tauri_migration_20260228/](./tracks/tauri_migration_20260228/)*

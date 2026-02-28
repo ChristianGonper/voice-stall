@@ -31,11 +31,15 @@ class SidecarServer:
         self.hotkey_listener = None
         self.state_lock = threading.Lock()
         self.write_lock = threading.Lock()
+        self.engine_init_lock = threading.Lock()
         self.is_recording = False
         self.is_processing = False
+        self.last_trigger_time = 0.0
+        self.current_status = "loading"
+        self.current_status_message = "Cargando motor..."
 
         self._restart_hotkey_listener()
-        self._emit_status("idle", "Listo para dictar")
+        self._preload_engine()
 
     def _write_json(self, payload: dict[str, Any]):
         encoded = json.dumps(payload, ensure_ascii=False)
@@ -47,20 +51,34 @@ class SidecarServer:
         self._write_json({"event": event, "payload": payload})
 
     def _emit_status(self, state: str, message: str):
+        self.current_status = state
+        self.current_status_message = message
         self._emit_event("status", {"state": state, "message": message})
 
     def _normalize_hotkey(self, value: str) -> str:
         normalized = str(value or "ctrl+alt+s").strip().lower().replace(" ", "")
-        normalized = normalized.replace("control", "ctrl").replace("option", "alt")
+        normalized = normalized.replace("control", "ctrl").replace("option", "alt").replace("command", "cmd")
         if normalized.count("+") < 1:
             return "ctrl+alt+s"
         return normalized
 
     def _hotkey_to_pynput(self, hotkey: str) -> str:
-        token_map = {"ctrl": "<ctrl>", "alt": "<alt>", "shift": "<shift>"}
-        return "+".join(token_map.get(t, t) for t in hotkey.split("+") if t)
+        # Avoid using brackets for modifiers if possible, pynput handles ctrl, alt, shift natively in strings
+        # But for GlobalHotKeys, the canonical way is often <ctrl>+<alt>+s on Windows for better modifier detection
+        token_map = {"ctrl": "<ctrl>", "alt": "<alt>", "shift": "<shift>", "cmd": "<cmd>"}
+        parts = []
+        for t in hotkey.split("+"):
+            if not t: continue
+            parts.append(token_map.get(t, t))
+        return "+".join(parts)
 
     def _on_hotkey_trigger(self):
+        now = time.time()
+        # Debounce: prevent triggering twice within 500ms
+        if now - self.last_trigger_time < 0.5:
+            return
+        self.last_trigger_time = now
+        
         try:
             self.toggle_dictation()
         except Exception as exc:  # pragma: no cover - safety path
@@ -84,12 +102,28 @@ class SidecarServer:
             self._emit_status("error", f"Hotkey invalida: {exc}")
 
     def _ensure_engine(self):
-        if self.engine is not None and self.dictation_service is not None:
-            return
-        self._emit_status("loading", "Cargando motor")
-        self.engine = STTEngine()
-        self.dictation_service = DictationService(self.engine)
-        self._emit_status("idle", "Listo para dictar")
+        with self.engine_init_lock:
+            if self.engine is not None and self.dictation_service is not None:
+                return
+
+            self._emit_status("loading", "Cargando motor...")
+            try:
+                self.engine = STTEngine()
+                self.dictation_service = DictationService(self.engine)
+            except Exception as exc:
+                self.engine = None
+                self.dictation_service = None
+                self._emit_status("error", f"No se pudo cargar el motor: {exc}")
+                raise
+
+            self._emit_status("idle", "Listo para dictar")
+
+    def _preload_engine(self):
+        try:
+            self._ensure_engine()
+        except Exception:
+            # Keep the sidecar responsive so the UI can still open and show the error state.
+            pass
 
     def _compute_recent_metrics(self, last_n: int = 5) -> dict[str, Any]:
         timing_log_path = self.storage.timing_log_path
@@ -185,6 +219,7 @@ class SidecarServer:
                 pyautogui.press("space")
                 paste_ms = (time.perf_counter() - t_paste0) * 1000
                 self._push_history(text)
+                self._emit_event("transcription", {"text": text, "ts": time.strftime("%H:%M:%S")})
 
             return {"status": "idle", "message": "Listo para dictar", "text": text}
         finally:
@@ -224,15 +259,24 @@ class SidecarServer:
             "config": self.cfg,
             "history": history,
             "metrics": metrics,
-            "status": "idle",
+            "status": self.current_status,
+            "status_message": self.current_status_message,
         }
 
     def save_config(self, config: dict[str, Any]) -> dict[str, Any]:
+        previous_engine_cfg = dict(self.cfg.get("engine", {}))
         self.storage.save_config(config)
         self.cfg = self.storage.load_config()
         self.app_cfg = self.cfg.get("app", {})
         self._restart_hotkey_listener()
-        if self.engine is not None:
+        current_engine_cfg = dict(self.cfg.get("engine", {}))
+
+        if previous_engine_cfg != current_engine_cfg:
+            with self.engine_init_lock:
+                self.engine = None
+                self.dictation_service = None
+            self._preload_engine()
+        elif self.engine is not None:
             self.engine.load_config(force=True)
         return {"ok": True}
 
@@ -287,6 +331,7 @@ class SidecarServer:
 
 def main():
     try:
+        sys.stdin.reconfigure(encoding="utf-8")
         sys.stdout.reconfigure(encoding="utf-8")
         sys.stderr.reconfigure(encoding="utf-8")
     except Exception:

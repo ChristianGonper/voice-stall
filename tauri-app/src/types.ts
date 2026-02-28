@@ -39,6 +39,7 @@ export type AppStateDto = {
   history: HistoryEntry[];
   metrics: MetricsSummary;
   status: string;
+  status_message: string;
 };
 
 export type ToggleResult = {

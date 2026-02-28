@@ -5,17 +5,13 @@ $projectDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $tauriAppDir = Join-Path $projectDir 'tauri-app'
 $logPath = Join-Path $tauriAppDir 'tauri-launch.log'
 
-function Resolve-NpmPath {
-    $cmd = Get-Command npm -ErrorAction SilentlyContinue
+function Resolve-TauriCliPath {
+    $localTauri = Join-Path $tauriAppDir 'node_modules\.bin\tauri.cmd'
+    if (Test-Path $localTauri) { return $localTauri }
+
+    $cmd = Get-Command tauri -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
 
-    $fallbacks = @(
-        (Join-Path $env:ProgramFiles 'nodejs\npm.cmd'),
-        (Join-Path $env:APPDATA 'npm\npm.cmd')
-    )
-    foreach ($f in $fallbacks) {
-        if (Test-Path $f) { return $f }
-    }
     return $null
 }
 
@@ -24,9 +20,9 @@ try {
         throw "No se encontro tauri-app en: $tauriAppDir"
     }
 
-    $npmPath = Resolve-NpmPath
-    if (-not $npmPath) {
-        throw 'npm no esta disponible. Instala Node.js y aseguralo en PATH.'
+    $tauriCliPath = Resolve-TauriCliPath
+    if (-not $tauriCliPath) {
+        throw 'No se encontro el CLI de Tauri. Ejecuta npm install dentro de tauri-app.'
     }
 
     $cargoBin = Join-Path $env:USERPROFILE '.cargo\bin'
@@ -35,11 +31,14 @@ try {
     }
 
     Set-Location $tauriAppDir
-    & $npmPath run tauri -- dev
+    & "$tauriCliPath" dev
     exit $LASTEXITCODE
 }
 catch {
     $_.Exception.Message | Set-Content -Path $logPath -Encoding UTF8
+    Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Presiona cualquier tecla para ver los detalles del log..."
+    $null = [Console]::ReadKey()
     Start-Process -FilePath 'powershell.exe' -ArgumentList '-NoExit','-Command',"Get-Content -Path '$logPath'"
     exit 1
 }

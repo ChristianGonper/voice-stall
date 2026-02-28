@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 from python_backend import SidecarServer
 
@@ -47,3 +48,19 @@ def test_handle_unknown_method_raises(tmp_path):
         assert "Metodo no soportado" in str(exc)
     else:
         raise AssertionError("Expected ValueError")
+
+
+def test_load_app_state_returns_current_status_snapshot(tmp_path):
+    server = SidecarServer.__new__(SidecarServer)
+    server.current_status = "loading"
+    server.current_status_message = "Cargando motor..."
+    server._compute_recent_metrics = lambda _last_n: {"count": 0, "avg_total_ms": 0.0, "avg_transcribe_ms": 0.0, "avg_paste_ms": 0.0}
+    server.storage = SimpleNamespace(
+        load_config=lambda: {"app": {"history_limit": 5}},
+        load_history=lambda limit: [],
+    )
+
+    state = SidecarServer.load_app_state(server)
+
+    assert state["status"] == "loading"
+    assert state["status_message"] == "Cargando motor..."

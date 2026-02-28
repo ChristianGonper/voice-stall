@@ -4,24 +4,30 @@
   "version": "0.1.0",
   "identifier": "voice.stall.tauri",
   "build": {
-    "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
-    "devUrl": "http://localhost:1430",
     "frontendDist": "../dist"
   },
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Voice Stall Tauri",
         "width": 900,
         "height": 760,
+        "minWidth": 100,
+        "minHeight": 50,
         "resizable": true,
-        "alwaysOnTop": true
+        "alwaysOnTop": true,
+        "decorations": false,
+        "transparent": false,
+        "shadow": true
       }
     ],
     "security": {
       "csp": null,
-      "capabilities": ["default"]
+      "capabilities": [
+        "default"
+      ]
     }
   },
   "bundle": {

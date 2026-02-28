@@ -64,15 +64,15 @@ class SettingsDialog(QDialog):
 
     def _build_ui(self):
         root = QVBoxLayout(self)
-        root.setContentsMargins(14, 14, 14, 14)
-        root.setSpacing(10)
+        root.setContentsMargins(20, 20, 20, 20)
+        root.setSpacing(12)
 
-        title = QLabel("Configuracion de dictado")
+        title = QLabel("Configuración de dictado")
         title.setObjectName("title")
         root.addWidget(title)
 
         form = QFormLayout()
-        form.setSpacing(8)
+        form.setSpacing(10)
         form.setLabelAlignment(Qt.AlignRight)
 
         app_cfg = self.cfg.setdefault("app", {})
@@ -100,7 +100,7 @@ class SettingsDialog(QDialog):
         self.diag_mode = QCheckBox("Activar metricas de diagnostico")
         self.diag_mode.setChecked(bool(app_cfg.get("diagnostic_mode", False)))
         self.diag_mode.toggled.connect(self._on_diag_mode_toggled)
-        form.addRow("Diagnostico", self.diag_mode)
+        form.addRow("Diagnóstico", self.diag_mode)
 
         self.history_limit = QSpinBox()
         self.history_limit.setRange(1, 20)
@@ -114,7 +114,7 @@ class SettingsDialog(QDialog):
         root.addWidget(hint)
 
         lower = QHBoxLayout()
-        lower.setSpacing(10)
+        lower.setSpacing(15)
 
         dict_box = QGroupBox("Diccionario")
         dict_layout = QVBoxLayout(dict_box)
@@ -181,22 +181,21 @@ class SettingsDialog(QDialog):
 
         self.setStyleSheet(
             """
-            QDialog { background: #101822; color: #d7e4f1; }
-            QLabel#title { font-size: 16px; font-weight: 700; color: #f5f9ff; }
-            QLabel#hint { color: #8ca4bd; font-size: 11px; }
+            QDialog { background: #0A0A0B; color: #FFFFFF; }
+            QLabel#title { font-size: 18px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px; }
+            QLabel#hint { color: #8E8E93; font-size: 11px; }
             QLineEdit, QComboBox, QSpinBox, QListWidget, QTextEdit {
-                background: #0f1824; color: #d7e4f1; border: 1px solid #2d3f53; border-radius: 8px; padding: 5px;
+                background: #1C1C1E; color: #FFFFFF; border: 1px solid #2C2C2E; border-radius: 8px; padding: 6px;
             }
             QGroupBox {
-                border: 1px solid #2d3f53; border-radius: 10px; margin-top: 8px; padding-top: 8px;
+                border: 1px solid #2C2C2E; border-radius: 12px; margin-top: 12px; padding-top: 12px;
             }
-            QGroupBox::title { subcontrol-origin: margin; left: 8px; padding: 0 4px; color: #9fb8d1; }
-            QCheckBox { color: #d7e4f1; }
+            QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; color: #8E8E93; font-weight: 600; }
             QPushButton {
-                background: #1b2838; color: #d7e4f1; border: 1px solid #355070;
-                border-radius: 8px; padding: 6px 10px; font-weight: 600;
+                background: #1C1C1E; color: #FFFFFF; border: 1px solid #2C2C2E;
+                border-radius: 10px; padding: 8px 14px; font-weight: 600;
             }
-            QPushButton:hover { background: #26364b; }
+            QPushButton:hover { background: #2C2C2E; }
             """
         )
         self.refresh_dictionary_list()
@@ -291,7 +290,7 @@ class SettingsDialog(QDialog):
         diag_enabled = bool(self.cfg.get("app", {}).get("diagnostic_mode", False))
         if stats["count"] == 0:
             self.metrics_summary.setText(
-                f"Diagnostico: {'ON' if diag_enabled else 'OFF'} | Sin datos. Realiza dictados con diagnostico activo."
+                f"Diagnóstico: {'ON' if diag_enabled else 'OFF'} | Sin datos. Realiza dictados con diagnóstico activo."
             )
             self._set_metric_bar(self.total_bar, 0.0, "Total")
             self._set_metric_bar(self.stt_bar, 0.0, "STT")
@@ -299,7 +298,7 @@ class SettingsDialog(QDialog):
             return
 
         self.metrics_summary.setText(
-            f"Diagnostico: {'ON' if diag_enabled else 'OFF'} | Ciclos: {stats['count']} (ultimos 5)"
+            f"Diagnóstico: {'ON' if diag_enabled else 'OFF'} | Ciclos: {stats['count']} (últimos 5)"
         )
         self._set_metric_bar(self.total_bar, stats["avg_total_ms"], "Total")
         self._set_metric_bar(self.stt_bar, stats["avg_transcribe_ms"], "STT")
@@ -363,8 +362,10 @@ class VoiceStallQtApp(QMainWindow):
 
     def _build_ui(self):
         self.setWindowTitle("Voice Stall - Neo")
-        self.setFixedSize(460, 250)
-        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+        self.setFixedSize(480, 270)
+        # Frameless window and transparent background for rounded corners
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+        # self.setAttribute(Qt.WA_TranslucentBackground) - REMOVED for complete opacity
 
         icon_path = os.path.join(self.base_dir, "voice_stall_icon.ico")
         if os.path.exists(icon_path):
@@ -374,18 +375,18 @@ class VoiceStallQtApp(QMainWindow):
         self.setCentralWidget(container)
 
         root = QVBoxLayout(container)
-        root.setContentsMargins(14, 14, 14, 14)
-        root.setSpacing(10)
+        root.setContentsMargins(0, 0, 0, 0) # No padding for minimalist opaque window
+        root.setSpacing(0)
 
         self.card = QFrame()
         self.card.setObjectName("card")
         card_layout = QVBoxLayout(self.card)
-        card_layout.setContentsMargins(16, 14, 16, 14)
-        card_layout.setSpacing(10)
+        card_layout.setContentsMargins(20, 18, 20, 18)
+        card_layout.setSpacing(12)
         root.addWidget(self.card)
 
         header = QHBoxLayout()
-        header.setSpacing(8)
+        header.setSpacing(10)
         self.brand = QLabel("Voice Stall")
         self.brand.setObjectName("brand")
         self.tag = QLabel("2026")
@@ -414,7 +415,7 @@ class VoiceStallQtApp(QMainWindow):
         self.progress.setRange(0, 0)
         self.progress.setVisible(False)
         self.progress.setTextVisible(False)
-        self.progress.setFixedHeight(6)
+        self.progress.setFixedHeight(4)
         self.progress.setObjectName("progress")
         card_layout.addWidget(self.progress)
 
@@ -429,41 +430,40 @@ class VoiceStallQtApp(QMainWindow):
 
         self.setStyleSheet(
             """
-            QWidget { background: #0b1118; color: #d7e4f1; font-family: "Segoe UI"; }
+            QWidget { background: #0A0A0B; color: #FFFFFF; font-family: "Inter", "Segoe UI"; }
             QFrame#card {
-                background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 #111926, stop:1 #0e1520);
-                border: 1px solid #223246;
-                border-radius: 16px;
+                background: #0A0A0B;
+                border: 1px solid #2C2C2E;
+                border-radius: 0px;
             }
-            QLabel#brand { font-size: 20px; font-weight: 700; color: #f5f9ff; }
+            QLabel#brand { font-size: 20px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px; }
             QLabel#tag {
-                background: #1a2638; color: #94b8ff; border: 1px solid #355070;
-                border-radius: 10px; padding: 2px 8px; font-weight: 600;
+                background: #1C1C1E; color: #8E8E93; border: 1px solid #2C2C2E;
+                border-radius: 10px; padding: 2px 8px; font-weight: 600; font-size: 10px;
             }
             QLabel#mode {
-                background: #1c2838; color: #b8c9dc; border: 1px solid #364a62;
-                border-radius: 10px; padding: 3px 10px; font-weight: 700;
+                background: #1C1C1E; color: #FFFFFF; border: 1px solid #2C2C2E;
+                border-radius: 10px; padding: 3px 10px; font-weight: 700; font-size: 10px;
             }
-            QLabel#status { font-size: 17px; font-weight: 600; color: #ecf3ff; }
-            QLabel#hint { color: #8ca4bd; font-size: 12px; }
-            QLabel#footer { color: #6f869e; font-size: 11px; }
+            QLabel#status { font-size: 16px; font-weight: 600; color: #FFFFFF; }
+            QLabel#hint { color: #8E8E93; font-size: 12px; }
+            QLabel#footer { color: #48484A; font-size: 10px; }
             QPushButton#action {
-                background: #4f8cff; color: #f7fbff; border: none;
-                border-radius: 12px; padding: 10px 12px; font-size: 14px; font-weight: 700;
+                background: #007AFF; color: #FFFFFF; border: none;
+                border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 700;
             }
-            QPushButton#action:hover { background: #6da0ff; }
-            QPushButton#action:pressed { background: #3f79e8; }
+            QPushButton#action:hover { background: #0A84FF; }
+            QPushButton#action:pressed { background: #0056B3; }
             QPushButton#settings {
-                background: #1b2838; color: #d7e4f1; border: 1px solid #355070;
-                border-radius: 10px; padding: 4px 10px; font-size: 12px; font-weight: 600;
+                background: #1C1C1E; color: #FFFFFF; border: 1px solid #2C2C2E;
+                border-radius: 10px; padding: 4px 10px; font-size: 11px; font-weight: 600;
             }
-            QPushButton#settings:hover { background: #26364b; }
+            QPushButton#settings:hover { background: #2C2C2E; }
             QProgressBar#progress {
-                border: 1px solid #2d3f53; border-radius: 3px; background: #0f1824;
+                border: 1px solid #2C2C2E; border-radius: 2px; background: #1C1C1E;
             }
             QProgressBar#progress::chunk {
-                background: qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 #4fd1ff, stop:1 #7effb2);
-                border-radius: 3px;
+                background: #007AFF; border-radius: 2px;
             }
             """
         )
@@ -471,10 +471,10 @@ class VoiceStallQtApp(QMainWindow):
 
     def _setup_animations(self):
         self.fade_in = QPropertyAnimation(self, b"windowOpacity")
-        self.fade_in.setDuration(220)
-        self.fade_in.setStartValue(0.94)
+        self.fade_in.setDuration(300)
+        self.fade_in.setStartValue(1.0)
         self.fade_in.setEndValue(1.0)
-        self.setWindowOpacity(0.94)
+        self.setWindowOpacity(1.0)
         self.fade_in.start()
 
     def _tick_status(self):
@@ -526,7 +526,7 @@ class VoiceStallQtApp(QMainWindow):
             self.hotkey_listener.start()
         except Exception as e:
             self.hotkey_listener = None
-            self.signals.status_changed.emit("error", f"Hotkey invalida: {e}")
+            self.signals.status_changed.emit("error", f"Hotkey inválida: {e}")
 
     def _restart_hotkey_listener(self):
         if self.hotkey_listener is not None:
@@ -556,7 +556,7 @@ class VoiceStallQtApp(QMainWindow):
                 threading.Thread(target=self._load_engine, daemon=True).start()
             else:
                 self.engine.load_config(force=True)
-        self.signals.status_changed.emit("idle", "Configuracion aplicada")
+        self.signals.status_changed.emit("idle", "Configuración aplicada")
 
     def _load_engine(self):
         self.signals.status_changed.emit("loading", "Cargando motor...")
@@ -581,7 +581,7 @@ class VoiceStallQtApp(QMainWindow):
 
     def start_recording(self):
         if self.engine is None or self.dictation_service is None:
-            self.signals.status_changed.emit("loading", "Motor aun no disponible")
+            self.signals.status_changed.emit("loading", "Motor aún no disponible")
             return
         if self.recorder.start_recording():
             with self.state_lock:
@@ -653,7 +653,7 @@ class VoiceStallQtApp(QMainWindow):
         if status == "idle":
             self.mode.setText("IDLE")
             self.mode.setStyleSheet(
-                "background:#1c2838;color:#b8c9dc;border:1px solid #364a62;border-radius:10px;padding:3px 10px;font-weight:700;"
+                "background:#1C1C1E;color:#FFFFFF;border:1px solid #2C2C2E;border-radius:10px;padding:3px 10px;font-weight:700;font-size:10px;"
             )
             self.action_btn.setText("Iniciar dictado")
             self.progress.setVisible(False)
@@ -661,7 +661,7 @@ class VoiceStallQtApp(QMainWindow):
         elif status == "recording":
             self.mode.setText("REC")
             self.mode.setStyleSheet(
-                "background:#3a1520;color:#ffd6de;border:1px solid #8d3a53;border-radius:10px;padding:3px 10px;font-weight:700;"
+                "background:#3A1520;color:#FFD6DE;border:1px solid #8D3A53;border-radius:10px;padding:3px 10px;font-weight:700;font-size:10px;"
             )
             self.action_btn.setText("Detener dictado")
             self.progress.setVisible(False)
@@ -669,7 +669,7 @@ class VoiceStallQtApp(QMainWindow):
         elif status == "processing":
             self.mode.setText("PROC")
             self.mode.setStyleSheet(
-                "background:#2a3317;color:#dcf5bf;border:1px solid #607a35;border-radius:10px;padding:3px 10px;font-weight:700;"
+                "background:#2A3317;color:#DCF5BF;border:1px solid #607A35;border-radius:10px;padding:3px 10px;font-weight:700;font-size:10px;"
             )
             self.action_btn.setText("Procesando...")
             self.progress.setVisible(True)
@@ -677,7 +677,7 @@ class VoiceStallQtApp(QMainWindow):
         elif status == "loading":
             self.mode.setText("LOAD")
             self.mode.setStyleSheet(
-                "background:#1f2b3c;color:#d0e8ff;border:1px solid #4b6b8f;border-radius:10px;padding:3px 10px;font-weight:700;"
+                "background:#1C1C1E;color:#D0E8FF;border:1px solid #2C2C2E;border-radius:10px;padding:3px 10px;font-weight:700;font-size:10px;"
             )
             self.action_btn.setText("Cargando...")
             self.progress.setVisible(True)
@@ -685,7 +685,7 @@ class VoiceStallQtApp(QMainWindow):
         else:
             self.mode.setText("ERR")
             self.mode.setStyleSheet(
-                "background:#35171b;color:#ffd3d8;border:1px solid #8a3d48;border-radius:10px;padding:3px 10px;font-weight:700;"
+                "background:#35171B;color:#FFD3D8;border:1px solid #8A3D48;border-radius:10px;padding:3px 10px;font-weight:700;font-size:10px;"
             )
             self.action_btn.setText("Reintentar")
             self.progress.setVisible(False)
@@ -709,7 +709,6 @@ class VoiceStallQtApp(QMainWindow):
 
 
 if __name__ == "__main__":
-    # Ensure Windows taskbar groups this process with a custom app ID so the icon is used.
     if os.name == "nt":
         try:
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("voice.stall.qt")
