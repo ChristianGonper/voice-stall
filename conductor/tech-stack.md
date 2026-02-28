@@ -10,7 +10,8 @@
 - **PyAudio**: Captura de audio desde el micrófono.
 
 ## UI Framework
-- **Tkinter**: Interfaz gráfica estándar de Python, personalizada para un diseño moderno "Minimal Pro".
+- **Tauri + React**: Framework moderno para aplicaciones de escritorio (Rust + React/TypeScript) con backend sidecar en Python.
+- **PySide6**: UI secundaria/opcional (en proceso de migración).
 
 ## Automation & System Integration
 - **pynput**: Escucha de atajos de teclado globales.
