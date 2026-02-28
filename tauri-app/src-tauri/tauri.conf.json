@@ -11,7 +11,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Voice Stall Tauri",
+        "title": "VOICE STALL V2",
         "width": 900,
         "height": 760,
         "minWidth": 100,
@@ -20,7 +20,8 @@
         "alwaysOnTop": true,
         "decorations": false,
         "transparent": false,
-        "shadow": true
+        "shadow": true,
+        "theme": "Dark"
       }
     ],
     "security": {

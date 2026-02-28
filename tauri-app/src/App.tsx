@@ -108,6 +108,10 @@ export function App() {
   };
 
   useEffect(() => {
+    // Force background color on body for resilience
+    document.body.style.backgroundColor = '#07090C';
+    document.documentElement.style.backgroundColor = '#07090C';
+    
     let unlistenStatus: (() => void) | undefined;
     let unlistenDiag: (() => void) | undefined;
     let unlistenTranscription: (() => void) | undefined;
@@ -234,7 +238,7 @@ export function App() {
 
   if (!ready) {
     return (
-      <div className="shell" style={{ justifyContent: "center", alignItems: "center", background: "#0A0E17" }}>
+      <div className="shell" style={{ justifyContent: "center", alignItems: "center" }}>     
         <div className="status-badge loading">Iniciando Voice Stall...</div>
       </div>
     );
@@ -243,9 +247,9 @@ export function App() {
   if (bootError || !config) {
     return (
       <div className="shell">
-        <div className="app-container" style={{ padding: 24, justifyContent: "center", alignItems: "center" }}>
+        <div className="app-container" style={{ padding: 24, justifyContent: "center", alignItems: "center" }}>     
           <h2>Error Fatal</h2>
-          <p style={{ color: "var(--accent-red)" }}>{bootError ?? "No se pudo cargar la configuración."}</p>
+          <p style={{ color: "var(--accent-red)" }}>{bootError ?? "No se pudo cargar la configuraciÃ³n."}</p>       
           <button className="primary" onClick={() => window.location.reload()}>Reintentar</button>
         </div>
       </div>
@@ -253,20 +257,16 @@ export function App() {
   }
 
   return (
-    <div className="shell">
+    <div className="shell" style={{ width: '100vw', height: '100vh', background: '#07090C' }}>
       <div
         className={`titlebar ${miniMode ? "compact" : ""}`}
+        data-tauri-drag-region
       >
         <div
           className="titlebar-drag"
           data-tauri-drag-region
           onDoubleClick={() => {
             void toggleWindowMaximize();
-          }}
-          onPointerDown={(e) => {
-            if (e.buttons === 1) {
-              void appWindow.startDragging().catch(console.error);
-            }
           }}
         >
           <div className="titlebar-title">
