@@ -28,17 +28,46 @@ class SidecarServer:
         self.app_cfg = self.cfg.get("app", {})
 
         self.hotkey_listener = None
+        self.state_tracker = None
+        self.pressed_keys = set()
         self.state_lock = threading.Lock()
         self.write_lock = threading.Lock()
         self.engine_init_lock = threading.Lock()
         self.is_recording = False
         self.is_processing = False
+        self.is_pasting = False
         self.last_trigger_time = 0.0
         self.current_status = "loading"
         self.current_status_message = "Cargando motor..."
 
+        self._start_state_tracker()
         self._restart_hotkey_listener()
         self._preload_engine()
+
+    def _start_state_tracker(self):
+        """Starts a background listener to track the REAL physical state of modifier keys."""
+        def on_press(key):
+            try:
+                # Store the canonical name of the key
+                if hasattr(key, 'vk'):
+                    self.pressed_keys.add(key.vk)
+                else:
+                    self.pressed_keys.add(key)
+            except Exception:
+                pass
+
+        def on_release(key):
+            try:
+                if hasattr(key, 'vk'):
+                    self.pressed_keys.discard(key.vk)
+                else:
+                    self.pressed_keys.discard(key)
+            except Exception:
+                pass
+
+        self.state_tracker = keyboard.Listener(on_press=on_press, on_release=on_release)
+        self.state_tracker.daemon = True
+        self.state_tracker.start()
 
     def _write_json(self, payload: dict[str, Any]):
         encoded = json.dumps(payload, ensure_ascii=False)
@@ -73,9 +102,38 @@ class SidecarServer:
 
     def _on_hotkey_trigger(self):
         now = time.time()
-        # Debounce: prevent triggering twice within 500ms
-        if now - self.last_trigger_time < 0.5:
+        # Debounce: prevent triggering twice within 800ms
+        if now - self.last_trigger_time < 0.8:
             return
+        
+        # PHYSICAL VERIFICATION:
+        # pynput.GlobalHotKeys is prone to "ghost" triggers on Windows if a key release was missed.
+        # We check our own state_tracker to see if Ctrl/Alt are REALLY pressed.
+        hotkey_str = self.app_cfg.get("hotkey", "ctrl+alt+s")
+        
+        # Check for Ctrl and Alt in our tracker. 
+        # On Windows, pynput often stores these as virtual key codes (VK) in the set.
+        # VK_CONTROL = 17 (0x11), VK_MENU (ALT) = 18 (0x12)
+        ctrl_pressed = (keyboard.Key.ctrl in self.pressed_keys or 
+                        keyboard.Key.ctrl_l in self.pressed_keys or 
+                        keyboard.Key.ctrl_r in self.pressed_keys or 
+                        17 in self.pressed_keys)
+        
+        alt_pressed = (keyboard.Key.alt in self.pressed_keys or 
+                       keyboard.Key.alt_l in self.pressed_keys or 
+                       keyboard.Key.alt_r in self.pressed_keys or 
+                       18 in self.pressed_keys)
+
+        # Only proceed if modifiers are physically held (or if we can't be sure, we fail safe)
+        # Note: If you only use "S" to trigger (no modifiers), this logic might need adjustment.
+        if "ctrl" in hotkey_str and not ctrl_pressed:
+            return
+        if "alt" in hotkey_str and not alt_pressed:
+            return
+
+        if self.is_processing or self.is_pasting:
+            return
+
         self.last_trigger_time = now
         
         try:
@@ -193,6 +251,9 @@ class SidecarServer:
             self.is_recording = False
             self.is_processing = True
 
+        # SAFETY DELAY: Let the OS process the hotkey release events before the CPU spike
+        time.sleep(0.1)
+
         self._emit_status("processing", "Procesando audio")
 
         audio_file = None
@@ -216,6 +277,7 @@ class SidecarServer:
                 time.sleep(0.05)
                 
                 try:
+                    self.is_pasting = True
                     import pyautogui
                     pyautogui.hotkey("ctrl", "v")
                     pyautogui.press("space")
@@ -223,6 +285,8 @@ class SidecarServer:
                 except Exception:
                     # Likely headless or display issues in CI
                     paste_ms = 0.0
+                finally:
+                    self.is_pasting = False
                 
                 self._push_history(text)
                 self._emit_event("transcription", {"text": text, "ts": time.strftime("%H:%M:%S")})
