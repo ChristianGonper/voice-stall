@@ -1,5 +1,7 @@
 # Evaluación de Framework (2026-02-27)
 
+> Nota histórica: esta comparación fue útil antes de cerrar la migración. El estado actual del repositorio ya no usa `main_qt.py` y la aplicación activa está consolidada en Tauri + sidecar Python.
+
 ## Contexto
 - App local, single-user, Windows.
 - Flujo actual simplificado: STT -> diccionario -> pegado.
@@ -48,3 +50,6 @@
 ## Veredicto técnico
 - Para uso personal local, el mejor ROI hoy es **seguir en PySide6**.
 - La inversión debe centrarse en performance reproducible y robustez, no en reescritura de framework.
+
+## Estado actual del repositorio
+- Este veredicto quedó superado por la consolidación del frontend Tauri.

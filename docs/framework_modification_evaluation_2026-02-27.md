@@ -2,6 +2,8 @@
 
 Fecha: 2026-02-27
 
+> Nota histórica: este documento refleja una evaluación previa. El estado actual del repositorio ya consolidó la aplicación activa en `tauri-app/` con `python_backend.py`, y `main_qt.py` ya no forma parte del árbol.
+
 ## Objetivo
 Determinar si la migración a Tauri mejora el rendimiento y mantenibilidad sin degradar hotkey global, foco y pegado automático.
 
@@ -30,3 +32,7 @@ Determinar si la migración a Tauri mejora el rendimiento y mantenibilidad sin d
 ## Veredicto provisional
 - Recomendación actual: **mantener convivencia temporal** y no retirar PySide6 todavía.
 - Cambio de framework se aprobará para reemplazo solo si Tauri cumple los umbrales de benchmark y confiabilidad definidos.
+
+## Estado actual del repositorio
+- Esta recomendación quedó superada.
+- La aplicación activa se ejecuta sobre Tauri + sidecar Python.
