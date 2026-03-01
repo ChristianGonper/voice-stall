@@ -13,7 +13,7 @@
   - `set_hotkey`
   - `get_history`
   - `get_metrics`
-- Convivencia temporal mantenida: `main_qt.py` sigue disponible como fallback.
+- La aplicación activa queda consolidada sobre Tauri + sidecar Python.
 
 ### Pruebas
 - Nueva suite para sidecar Python: `tests/test_python_backend.py`.
@@ -34,7 +34,7 @@
 ### Calidad y pruebas
 - Suite de tests actualizada para el nuevo alcance.
 - Nuevas pruebas para almacenamiento (`tests/test_app_storage.py`) y servicio de dictado (`tests/test_dictation_service.py`).
-- Nuevas pruebas de flujo del ciclo principal (`tests/test_main_qt_flow.py`).
+- Nuevas pruebas del backend y del flujo principal de dictado.
 
 ### Rendimiento y evaluación técnica
 - Runner de benchmark reproducible: `benchmarks/run_benchmark.py`.

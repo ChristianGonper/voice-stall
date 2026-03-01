@@ -9,8 +9,8 @@ Aplicación local de dictado para Windows con `faster-whisper`, hotkey global y 
 ## Estado del proyecto
 
 - Rama canónica: `version-2.0`
-- App principal (v2): `main_qt.py` (PySide6)
-- Migración avanzada: `tauri-app/` (Tauri + React + sidecar Python)
+- App principal (v2): `tauri-app/` (Tauri + React + sidecar Python)
+- UI de escritorio activa: frontend Tauri con backend `python_backend.py`
 - Nuevo Diseño: "Deep Night Minimalist" con bordes redondeados y opacidad total en contenido.
 
 ## Requisitos
@@ -26,21 +26,7 @@ Aplicación local de dictado para Windows con `faster-whisper`, hotkey global y 
 uv sync
 ```
 
-## Ejecutar v2 (principal)
-
-```powershell
-uv run main_qt.py
-```
-
-Opcional:
-
-```powershell
-.\start_voz_qt.cmd
-.\start_voz_qt_silent.vbs
-.\crear_acceso_directo_v2.ps1
-```
-
-## Ejecutar Tauri (migración)
+## Ejecutar v2
 
 Requisitos adicionales:
 - Node.js 20+
@@ -89,7 +75,6 @@ Salida:
 
 ## Estructura
 
-- `main_qt.py`: UI principal, hotkey, historial, diagnóstico, pegado
 - `python_backend.py`: sidecar Python persistente para Tauri
 - `tauri-app/`: shell Tauri (Rust) + frontend React/TypeScript
 - `dictation_service.py`: orquestación de ciclo de dictado
@@ -102,7 +87,7 @@ Salida:
 
 - **Concepto**: Minimalista, alto contraste, estética "Premium Dark".
 - **Transparencia**: Ventana flotante con bordes redondeados transparentes (efecto frameless). El contenido de la aplicación es 100% opaco para máxima legibilidad.
-- **Frameworks**: Soporte completo para Qt (estable) y Tauri (beta avanzada).
+- **Framework**: Tauri + React con sidecar Python.
 
 ## Alcance actual
 

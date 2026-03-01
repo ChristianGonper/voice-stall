@@ -7,7 +7,10 @@ import traceback
 from typing import Any
 
 import pyperclip
-from pynput import keyboard
+try:
+    from pynput import keyboard
+except Exception:  # pragma: no cover - depends on desktop environment
+    keyboard = None
 
 from app_storage import AppStorage
 from dictation_service import DictationService
@@ -46,6 +49,9 @@ class SidecarServer:
 
     def _start_state_tracker(self):
         """Starts a background listener to track the REAL physical state of modifier keys."""
+        if keyboard is None:
+            return
+
         def on_press(key):
             try:
                 # Store the canonical name of the key
@@ -109,20 +115,26 @@ class SidecarServer:
         # PHYSICAL VERIFICATION:
         # pynput.GlobalHotKeys is prone to "ghost" triggers on Windows if a key release was missed.
         # We check our own state_tracker to see if Ctrl/Alt are REALLY pressed.
-        hotkey_str = self.app_cfg.get("hotkey", "ctrl+alt+s")
-        
+        app_cfg = getattr(self, "app_cfg", {})
+        hotkey_str = app_cfg.get("hotkey", "ctrl+alt+s") if isinstance(app_cfg, dict) else "ctrl+alt+s"
+        pressed_keys = getattr(self, "pressed_keys", None)
+
         # Check for Ctrl and Alt in our tracker. 
         # On Windows, pynput often stores these as virtual key codes (VK) in the set.
         # VK_CONTROL = 17 (0x11), VK_MENU (ALT) = 18 (0x12)
-        ctrl_pressed = (keyboard.Key.ctrl in self.pressed_keys or 
-                        keyboard.Key.ctrl_l in self.pressed_keys or 
-                        keyboard.Key.ctrl_r in self.pressed_keys or 
-                        17 in self.pressed_keys)
-        
-        alt_pressed = (keyboard.Key.alt in self.pressed_keys or 
-                       keyboard.Key.alt_l in self.pressed_keys or 
-                       keyboard.Key.alt_r in self.pressed_keys or 
-                       18 in self.pressed_keys)
+        if keyboard is not None and pressed_keys is not None:
+            ctrl_pressed = (keyboard.Key.ctrl in pressed_keys or
+                            keyboard.Key.ctrl_l in pressed_keys or
+                            keyboard.Key.ctrl_r in pressed_keys or
+                            17 in pressed_keys)
+
+            alt_pressed = (keyboard.Key.alt in pressed_keys or
+                           keyboard.Key.alt_l in pressed_keys or
+                           keyboard.Key.alt_r in pressed_keys or
+                           18 in pressed_keys)
+        else:
+            ctrl_pressed = True
+            alt_pressed = True
 
         # Only proceed if modifiers are physically held (or if we can't be sure, we fail safe)
         # Note: If you only use "S" to trigger (no modifiers), this logic might need adjustment.
@@ -142,6 +154,10 @@ class SidecarServer:
             self._emit_status("error", f"Error hotkey: {exc}")
 
     def _restart_hotkey_listener(self):
+        if keyboard is None:
+            self.hotkey_listener = None
+            return
+
         hotkey = self._normalize_hotkey(self.app_cfg.get("hotkey", "ctrl+alt+s"))
         self.app_cfg["hotkey"] = hotkey
         if self.hotkey_listener is not None:
