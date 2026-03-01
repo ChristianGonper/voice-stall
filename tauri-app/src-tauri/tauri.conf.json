@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "identifier": "voice.stall.tauri",
   "build": {
+    "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:1430",
     "frontendDist": "../dist"
   },
   "app": {

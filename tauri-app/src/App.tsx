@@ -32,7 +32,7 @@ const EMPTY_METRICS: MetricsSummary = {
 };
 
 const NORMAL_WINDOW_SIZE = new LogicalSize(900, 760);
-const MINI_WINDOW_SIZE = new LogicalSize(360, 168);
+const MINI_WINDOW_SIZE = new LogicalSize(360, 200);
 const RESIZE_HANDLES: { direction: ResizeDirection; className: string }[] = [
   { direction: "North", className: "resize-north" },
   { direction: "South", className: "resize-south" },
@@ -53,14 +53,14 @@ function statusTone(status: string): "idle" | "recording" | "processing" | "erro
 
 function WaveBars({ status }: { status: string }) {
   const tone = statusTone(status);
-  const bars = Array.from({ length: 6 });
+  const bars = Array.from({ length: 7 });
   return (
     <div className={`wave wave-${tone}`}>
       {bars.map((_, index) => (
         <span
           key={index}
           className="wave-bar"
-          style={{ animationDelay: `${index * 0.15}s` }}
+          style={{ animationDelay: `${index * 0.12}s` }}
         />
       ))}
     </div>
@@ -109,8 +109,8 @@ export function App() {
 
   useEffect(() => {
     // Force background color on body for resilience
-    document.body.style.backgroundColor = '#07090C';
-    document.documentElement.style.backgroundColor = '#07090C';
+    document.body.style.backgroundColor = '#060b14';
+    document.documentElement.style.backgroundColor = '#060b14';
     
     let unlistenStatus: (() => void) | undefined;
     let unlistenDiag: (() => void) | undefined;
@@ -257,7 +257,7 @@ export function App() {
   }
 
   return (
-    <div className="shell" style={{ width: '100vw', height: '100vh', background: '#07090C' }}>
+    <div className="shell" style={{ width: '100vw', height: '100vh', background: 'var(--bg-deep)' }}>
       <div
         className={`titlebar ${miniMode ? "compact" : ""}`}
         data-tauri-drag-region

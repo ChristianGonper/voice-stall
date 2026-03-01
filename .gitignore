@@ -22,6 +22,7 @@ tauri-app/.tauri_debug_built.marker
 # Test and tooling caches
 .pytest_cache/
 .gemini/
+.tmp_pytest/
 
 # Voice Stall runtime artifacts
 temp_audio.wav
