@@ -1,0 +1,29 @@
+# Implementation Plan: Frontend UI/UX Enhancement & History Copy Feature
+
+## Phase 0: Setup
+- [ ] Task: Create feature branch `feat/frontend-enhancements`
+- [ ] Task: Conductor - User Manual Verification 'Phase 0: Setup' (Protocol in workflow.md)
+
+## Phase 1: Visual Foundation & Refined Styling
+- [ ] Task: Create refined color palette and CSS variables for "Enhanced Deep Night+"
+- [ ] Task: Update base UI components (Button, Card, Container) with deeper gradients and glow effects
+- [ ] Task: Implement improved "Opalescent" surface components with higher-quality transparency and blur
+- [ ] Task: Conductor - User Manual Verification 'Phase 1: Visual Foundation & Refined Styling' (Protocol in workflow.md)
+
+## Phase 2: Floating Pill (Minimized) Mode
+- [ ] Task: Design and implement the "Floating Pill" compact layout
+- [ ] Task: Add "Mode Toggle" logic to switch between Main Window and Floating Pill
+- [ ] Task: Ensure transcription text and recording button are fully functional in the minimized Pill
+- [ ] Task: Conductor - User Manual Verification 'Phase 2: Floating Pill (Minimized) Mode' (Protocol in workflow.md)
+
+## Phase 3: History & Always-Visible Copy Feature
+- [ ] Task: Update the History Item component to include an always-visible "Copy" icon button
+- [ ] Task: Implement the "Copy to Clipboard" logic and "Copied!" feedback state
+- [ ] Task: Ensure correct text is copied for each entry in the history list
+- [ ] Task: Conductor - User Manual Verification 'Phase 3: History & Always-Visible Copy Feature' (Protocol in workflow.md)
+
+## Phase 4: Final Polish & Visual Quality Check
+- [ ] Task: Fine-tune typography and spacing across all views for a premium feel
+- [ ] Task: Perform a cross-view visual audit (Minimized vs. Maximized) for consistency
+- [ ] Task: Final verification of the copy button in different application states
+- [ ] Task: Conductor - User Manual Verification 'Phase 4: Final Polish & Visual Quality Check' (Protocol in workflow.md)
