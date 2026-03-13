@@ -16,11 +16,11 @@
 - [x] Task: Ensure transcription text and recording button are fully functional in the minimized Pill 9062be6
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Floating Pill (Minimized) Mode' (Protocol in workflow.md) 1d6d8d4
 
-## Phase 3: History & Always-Visible Copy Feature
+## Phase 3: History & Always-Visible Copy Feature [checkpoint: 0db8aa0]
 - [x] Task: Update the History Item component to include an always-visible "Copy" icon button 030515e
 - [x] Task: Implement the "Copy to Clipboard" logic and "Copied!" feedback state 030515e
 - [x] Task: Ensure correct text is copied for each entry in the history list 030515e
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: History & Always-Visible Copy Feature' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: History & Always-Visible Copy Feature' (Protocol in workflow.md) 0db8aa0
 
 ## Phase 4: Final Polish & Visual Quality Check
 - [ ] Task: Fine-tune typography and spacing across all views for a premium feel
