@@ -312,7 +312,7 @@ export function App() {
         </div>
       )}
 
-      <div className="app-container" style={{ background: miniMode ? 'transparent' : 'var(--bg-deep)' }}>
+      <div className="app-container" style={{ background: miniMode ? 'transparent' : 'var(--bg-deep)', overflow: miniMode ? 'hidden' : 'auto' }}>
         {miniMode ? (
           <FloatingPill 
             status={status}
