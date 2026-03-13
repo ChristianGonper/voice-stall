@@ -314,7 +314,7 @@ export function App() {
           <FloatingPill 
             status={status}
             statusTone={statusTone}
-            statusMessage={statusMessage}
+            statusMessage={status === "idle" ? (historyItems[0]?.text ?? statusMessage) : statusMessage}
             onToggle={onToggle}
             onExpand={() => toggleMiniMode(false)}
           />
