@@ -33,6 +33,7 @@ class SidecarServer:
         self.hotkey_listener = None
         self.state_tracker = None
         self.pressed_keys = set()
+        self.key_press_times: dict[str, float] = {}
         self.state_lock = threading.Lock()
         self.write_lock = threading.Lock()
         self.engine_init_lock = threading.Lock()
@@ -54,11 +55,14 @@ class SidecarServer:
 
         def on_press(key):
             try:
+                now = time.monotonic()
                 # Store the canonical name of the key
                 if hasattr(key, 'vk'):
                     self.pressed_keys.add(key.vk)
                 else:
                     self.pressed_keys.add(key)
+                for token in self._key_to_tokens(key):
+                    self.key_press_times[token] = now
             except Exception:
                 pass
 
@@ -106,6 +110,102 @@ class SidecarServer:
             parts.append(token_map.get(t, t))
         return "+".join(parts)
 
+    def _key_to_tokens(self, key: Any) -> set[str]:
+        tokens: set[str] = set()
+        vk = getattr(key, "vk", None)
+        char = getattr(key, "char", None)
+        if isinstance(char, str) and char:
+            tokens.add(char.lower())
+        if isinstance(vk, int):
+            vk_map = {
+                16: "shift",
+                17: "ctrl",
+                18: "alt",
+                91: "cmd",
+                92: "cmd",
+            }
+            mapped = vk_map.get(vk)
+            if mapped:
+                tokens.add(mapped)
+            if 65 <= vk <= 90:
+                tokens.add(chr(vk).lower())
+            elif 48 <= vk <= 57:
+                tokens.add(chr(vk))
+
+        if keyboard is not None:
+            key_cls = getattr(keyboard, "Key", None)
+            if key_cls is not None:
+                alias_map = {
+                    getattr(key_cls, "ctrl", None): "ctrl",
+                    getattr(key_cls, "ctrl_l", None): "ctrl",
+                    getattr(key_cls, "ctrl_r", None): "ctrl",
+                    getattr(key_cls, "alt", None): "alt",
+                    getattr(key_cls, "alt_l", None): "alt",
+                    getattr(key_cls, "alt_r", None): "alt",
+                    getattr(key_cls, "shift", None): "shift",
+                    getattr(key_cls, "shift_l", None): "shift",
+                    getattr(key_cls, "shift_r", None): "shift",
+                    getattr(key_cls, "cmd", None): "cmd",
+                    getattr(key_cls, "cmd_l", None): "cmd",
+                    getattr(key_cls, "cmd_r", None): "cmd",
+                }
+                mapped = alias_map.get(key)
+                if mapped:
+                    tokens.add(mapped)
+
+        return tokens
+
+    def _is_hotkey_token_pressed(self, token: str, pressed_keys: set[Any] | None) -> bool:
+        if pressed_keys is None:
+            return True
+
+        normalized = token.strip().lower()
+        if not normalized:
+            return True
+
+        variants: list[Any] = []
+
+        if normalized == "ctrl":
+            variants.extend(["ctrl", "ctrl_l", "ctrl_r", 17])
+        elif normalized == "alt":
+            variants.extend(["alt", "alt_l", "alt_r", 18])
+        elif normalized == "shift":
+            variants.extend(["shift", "shift_l", "shift_r", 16])
+        elif normalized == "cmd":
+            variants.extend(["cmd", "cmd_l", "cmd_r", 91, 92])
+        else:
+            variants.extend([normalized, normalized.upper()])
+            if len(normalized) == 1:
+                variants.extend([ord(normalized.lower()), ord(normalized.upper())])
+
+        if keyboard is not None:
+            key_cls = getattr(keyboard, "Key", None)
+            if key_cls is not None:
+                for name in [v for v in variants if isinstance(v, str)]:
+                    key_value = getattr(key_cls, name, None)
+                    if key_value is not None:
+                        variants.append(key_value)
+
+            key_code_cls = getattr(keyboard, "KeyCode", None)
+            if key_code_cls is not None and len(normalized) == 1:
+                try:
+                    variants.append(key_code_cls.from_char(normalized.lower()))
+                    variants.append(key_code_cls.from_char(normalized.upper()))
+                except Exception:
+                    pass
+
+        return any(variant in pressed_keys for variant in variants)
+
+    def _was_hotkey_token_pressed_recently(self, token: str, now: float, window_s: float = 0.35) -> bool:
+        normalized = token.strip().lower()
+        if normalized in {"", "ctrl", "alt", "shift", "cmd"}:
+            return True
+        key_press_times = getattr(self, "key_press_times", {})
+        last_pressed = key_press_times.get(normalized)
+        if last_pressed is None:
+            return False
+        return (now - last_pressed) <= window_s
+
     def _on_hotkey_trigger(self):
         now = time.time()
         # Debounce: prevent triggering twice within 800ms
@@ -114,34 +214,16 @@ class SidecarServer:
         
         # PHYSICAL VERIFICATION:
         # pynput.GlobalHotKeys is prone to "ghost" triggers on Windows if a key release was missed.
-        # We check our own state_tracker to see if Ctrl/Alt are REALLY pressed.
+        # We check our own state_tracker to confirm the full hotkey is REALLY pressed.
         app_cfg = getattr(self, "app_cfg", {})
         hotkey_str = app_cfg.get("hotkey", "ctrl+alt+s") if isinstance(app_cfg, dict) else "ctrl+alt+s"
         pressed_keys = getattr(self, "pressed_keys", None)
-
-        # Check for Ctrl and Alt in our tracker. 
-        # On Windows, pynput often stores these as virtual key codes (VK) in the set.
-        # VK_CONTROL = 17 (0x11), VK_MENU (ALT) = 18 (0x12)
-        if keyboard is not None and pressed_keys is not None:
-            ctrl_pressed = (keyboard.Key.ctrl in pressed_keys or
-                            keyboard.Key.ctrl_l in pressed_keys or
-                            keyboard.Key.ctrl_r in pressed_keys or
-                            17 in pressed_keys)
-
-            alt_pressed = (keyboard.Key.alt in pressed_keys or
-                           keyboard.Key.alt_l in pressed_keys or
-                           keyboard.Key.alt_r in pressed_keys or
-                           18 in pressed_keys)
-        else:
-            ctrl_pressed = True
-            alt_pressed = True
-
-        # Only proceed if modifiers are physically held (or if we can't be sure, we fail safe)
-        # Note: If you only use "S" to trigger (no modifiers), this logic might need adjustment.
-        if "ctrl" in hotkey_str and not ctrl_pressed:
-            return
-        if "alt" in hotkey_str and not alt_pressed:
-            return
+        monotonic_now = time.monotonic()
+        for token in hotkey_str.split("+"):
+            if not self._is_hotkey_token_pressed(token, pressed_keys):
+                return
+            if not self._was_hotkey_token_pressed_recently(token, monotonic_now):
+                return
 
         if self.is_processing or self.is_pasting:
             return
