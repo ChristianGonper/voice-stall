@@ -13,7 +13,7 @@
 ## Phase 2: Floating Pill (Minimized) Mode
 - [x] Task: Design and implement the "Floating Pill" compact layout 262b041
 - [x] Task: Add "Mode Toggle" logic to switch between Main Window and Floating Pill 223f730
-- [ ] Task: Ensure transcription text and recording button are fully functional in the minimized Pill
+- [x] Task: Ensure transcription text and recording button are fully functional in the minimized Pill 9062be6
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Floating Pill (Minimized) Mode' (Protocol in workflow.md)
 
 ## Phase 3: History & Always-Visible Copy Feature
