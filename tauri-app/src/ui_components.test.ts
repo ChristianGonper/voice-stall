@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+﻿import { describe, it, expect, beforeAll } from "vitest";
 import fs from "fs";
 import path from "path";
 
@@ -25,7 +25,7 @@ describe("Base UI Components Refinement", () => {
     btn.className = "primary";
     document.body.appendChild(btn);
     const style = getComputedStyle(btn);
-    // jsdom might not fully parse complex box-shadows with variables, 
+    // jsdom might not fully parse complex box-shadows with variables,
     // but we can check if it exists or if we can see the variable name if not computed
     expect(style.boxShadow).toBeDefined();
     document.body.removeChild(btn);

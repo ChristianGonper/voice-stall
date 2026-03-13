@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+﻿import { describe, it, expect, beforeAll } from "vitest";
 import fs from "fs";
 import path from "path";
 
@@ -16,7 +16,7 @@ describe("Opalescent Components", () => {
     el.className = "opalescent";
     document.body.appendChild(el);
     const style = getComputedStyle(el);
-    // Background color for rgba(255, 255, 255, 0.03) might be computed differently, 
+    // Background color for rgba(255, 255, 255, 0.03) might be computed differently,
     // but let's check if it's set
     expect(style.backgroundColor).toBeDefined();
     expect(style.backdropFilter).toContain("blur(25px)");

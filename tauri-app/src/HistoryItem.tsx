@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 
 export function HistoryItem({ ts, text }: { ts: string, text: string }) {
@@ -20,10 +20,10 @@ export function HistoryItem({ ts, text }: { ts: string, text: string }) {
         <div className="history-ts">{ts}</div>
         <div className="history-text">{text}</div>
       </div>
-      <button 
-        className={`history-copy-btn ${copied ? "copied" : ""}`} 
+      <button
+        className={`history-copy-btn ${copied ? "copied" : ""}`}
         onClick={onCopy}
-        title={copied ? "¡Copiado!" : "Copiar al portapapeles"}
+        title={copied ? "Â¡Copiado!" : "Copiar al portapapeles"}
       >
         {copied ? (
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>

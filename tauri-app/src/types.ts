@@ -1,4 +1,4 @@
-export type DictEntry = Record<string, string>;
+﻿export type DictEntry = Record<string, string>;
 
 export type EngineConfig = {
   model_size: string;

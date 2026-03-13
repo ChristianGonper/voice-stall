@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+﻿import { invoke } from "@tauri-apps/api/core";
 import type { AppStateDto, FullConfig, MetricsSummary, ToggleResult } from "./types";
 
 export const initApp = () => invoke<AppStateDto>("init_app");

@@ -1,15 +1,15 @@
-export function FloatingPill({ 
-  status, 
-  statusTone, 
-  statusMessage, 
-  onToggle, 
-  onExpand 
-}: { 
-  status: string, 
-  statusTone: (s: string) => string, 
-  statusMessage: string, 
-  onToggle: () => void, 
-  onExpand: () => void 
+﻿export function FloatingPill({
+  status,
+  statusTone,
+  statusMessage,
+  onToggle,
+  onExpand
+}: {
+  status: string,
+  statusTone: (s: string) => string,
+  statusMessage: string,
+  onToggle: () => void,
+  onExpand: () => void
 }) {
   return (
     <div className="floating-pill" data-tauri-drag-region>
@@ -18,8 +18,8 @@ export function FloatingPill({
         {statusMessage}
       </div>
       <div className="pill-actions">
-        <button 
-          className={`pill-btn record ${status === "recording" ? "danger" : "primary"}`} 
+        <button
+          className={`pill-btn record ${status === "recording" ? "danger" : "primary"}`}
           onClick={onToggle}
           title={status === "recording" ? "Detener" : "Dictar"}
         >

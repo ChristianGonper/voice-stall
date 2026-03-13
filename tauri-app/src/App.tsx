@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { LogicalSize } from "@tauri-apps/api/dpi";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -83,6 +83,13 @@ export function App() {
   const [tab, setTab] = useState<TabKey>("control");
   const [miniMode, setMiniMode] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const historyLimitRef = useRef(10);
+
+  useEffect(() => {
+    if (config) {
+      historyLimitRef.current = config.app.history_limit;
+    }
+  }, [config]);
 
   const syncWindowState = async () => {
     try {
@@ -110,33 +117,56 @@ export function App() {
   };
 
   useEffect(() => {
-    // Force background color on body for resilience
+    // Body background should respond to miniMode
     const bgColor = miniMode ? 'transparent' : '#04080f';
     document.body.style.backgroundColor = bgColor;
     document.documentElement.style.backgroundColor = bgColor;
-    
+  }, [miniMode]);
+
+  useEffect(() => {
+    let cancelled = false;
     let unlistenStatus: (() => void) | undefined;
     let unlistenDiag: (() => void) | undefined;
     let unlistenTranscription: (() => void) | undefined;
 
     const setup = async () => {
       await syncWindowState();
-      unlistenStatus = await listen<StatusEvent>("status", (ev) => {
+      if (cancelled) return;
+
+      const uStatus = await listen<StatusEvent>("status", (ev) => {
+        if (cancelled) return;
         setStatus(ev.payload.state);
         setStatusMessage(ev.payload.message);
       });
-      unlistenDiag = await listen("diag", async () => {
+      if (cancelled) { uStatus(); return; }
+      unlistenStatus = uStatus;
+
+      const uDiag = await listen("diag", async () => {
+        if (cancelled) return;
         const m = await getMetrics(5);
+        if (cancelled) return;
         setMetrics(m);
       });
-      unlistenTranscription = await listen<{ text: string; ts: string }>("transcription", (ev) => {
-        setHistoryItems((prev) => [ev.payload, ...prev].slice(0, config?.app.history_limit || 10));
+      if (cancelled) { uDiag(); return; }
+      unlistenDiag = uDiag;
+
+      const uTrans = await listen<{ text: string; ts: string }>("transcription", (ev) => {
+        if (cancelled) return;
+        setHistoryItems((prev) => {
+          if (prev.length > 0 && prev[0].ts === ev.payload.ts && prev[0].text === ev.payload.text) {
+            return prev;
+          }
+          return [ev.payload, ...prev].slice(0, historyLimitRef.current);
+        });
       });
+      if (cancelled) { uTrans(); return; }
+      unlistenTranscription = uTrans;
 
       await loadInitialState();
     };
 
     setup().catch((err) => {
+      if (cancelled) return;
       setStatus("error");
       setStatusMessage(`Error init: ${String(err)}`);
       setBootError(String(err));
@@ -144,11 +174,12 @@ export function App() {
     });
 
     return () => {
+      cancelled = true;
       if (unlistenStatus) unlistenStatus();
       if (unlistenDiag) unlistenDiag();
       if (unlistenTranscription) unlistenTranscription();
     };
-  }, [appWindow, config?.app.history_limit, miniMode]);
+  }, [appWindow]);
 
   const hotkeyLabel = useMemo(() => {
     const value = config?.app.hotkey ?? "ctrl+alt+s";
@@ -174,7 +205,7 @@ export function App() {
     await saveSettings(config);
     const hotkeyResult = await setHotkey(config.app.hotkey);
     setStatus("idle");
-    setStatusMessage(`Configuración aplicada (${hotkeyResult.hotkey})`);
+    setStatusMessage(`ConfiguraciÃ³n aplicada (${hotkeyResult.hotkey})`);
   };
 
   const addDictionaryItem = () => {
@@ -244,7 +275,7 @@ export function App() {
 
   if (!ready) {
     return (
-      <div className="shell" style={{ justifyContent: "center", alignItems: "center" }}>     
+      <div className="shell" style={{ justifyContent: "center", alignItems: "center" }}>
         <div className="status-badge loading">Iniciando Voice Stall...</div>
       </div>
     );
@@ -253,9 +284,9 @@ export function App() {
   if (bootError || !config) {
     return (
       <div className="shell">
-        <div className="app-container" style={{ padding: 24, justifyContent: "center", alignItems: "center" }}>     
+        <div className="app-container" style={{ padding: 24, justifyContent: "center", alignItems: "center" }}>
           <h2>Error Fatal</h2>
-          <p style={{ color: "var(--accent-red)" }}>{bootError ?? "No se pudo cargar la configuraciÃ³n."}</p>       
+          <p style={{ color: "var(--accent-red)" }}>{bootError ?? "No se pudo cargar la configuraciÃƒÂ³n."}</p>
           <button className="primary" onClick={() => window.location.reload()}>Reintentar</button>
         </div>
       </div>
@@ -314,7 +345,7 @@ export function App() {
 
       <div className="app-container" style={{ background: miniMode ? 'transparent' : 'var(--bg-deep)', overflow: miniMode ? 'hidden' : 'auto' }}>
         {miniMode ? (
-          <FloatingPill 
+          <FloatingPill
             status={status}
             statusTone={statusTone}
             statusMessage={status === "idle" ? (historyItems[0]?.text ?? statusMessage) : statusMessage}
@@ -326,7 +357,7 @@ export function App() {
             <div className="app-header">
               <div>
                 <h1 className="brand">Voice Stall</h1>
-                <div className="subtitle">Dictado STT local ultrarrápido</div>
+                <div className="subtitle">Dictado STT local ultrarrÃ¡pido</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
                 <span className={`status-badge ${statusTone(status)}`}>
@@ -372,7 +403,7 @@ export function App() {
                 </div>
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, verticalAlign: 'middle' }}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                  Usa el atajo de teclado para alternar rápidamente en cualquier ventana.
+                  Usa el atajo de teclado para alternar rÃ¡pidamente en cualquier ventana.
                 </div>
               </div>
             )}
@@ -389,7 +420,7 @@ export function App() {
                     />
                   </label>
                   <label>
-                    Límite historial
+                    LÃ­mite historial
                     <input
                       type="number"
                       min={1}
@@ -406,7 +437,7 @@ export function App() {
                       value={config.engine.model_size}
                       onChange={(e) => setConfig({ ...config, engine: { ...config.engine, model_size: e.target.value } })}
                     >
-                      <option value="large-v3-turbo">large-v3-turbo (Rápido)</option>
+                      <option value="large-v3-turbo">large-v3-turbo (RÃ¡pido)</option>
                       <option value="base">base (Ligero)</option>
                     </select>
                   </label>
@@ -416,9 +447,9 @@ export function App() {
                       value={config.engine.language}
                       onChange={(e) => setConfig({ ...config, engine: { ...config.engine, language: e.target.value } })}
                     >
-                      <option value="auto">Automático</option>
-                      <option value="es">Español</option>
-                      <option value="en">Inglés</option>
+                      <option value="auto">AutomÃ¡tico</option>
+                      <option value="es">EspaÃ±ol</option>
+                      <option value="en">InglÃ©s</option>
                     </select>
                   </label>
                 </div>
@@ -432,7 +463,7 @@ export function App() {
                         setConfig({ ...config, app: { ...config.app, diagnostic_mode: e.target.checked } })
                       }
                     />
-                    Registrar métricas de diagnóstico de velocidad
+                    Registrar mÃ©tricas de diagnÃ³stico de velocidad
                   </label>
                 </div>
 
@@ -450,7 +481,7 @@ export function App() {
                     onChange={(e) => setNewDictValue(e.target.value)}
                     style={{ flex: 1 }}
                   />
-                  <button onClick={addDictionaryItem}>Añadir regla</button>
+                  <button onClick={addDictionaryItem}>AÃ±adir regla</button>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
@@ -485,9 +516,9 @@ export function App() {
 
             {tab === "metrics" && (
               <div className="panel">
-                <h3>Rendimiento (Últimos {metrics.count} ciclos)</h3>
+                <h3>Rendimiento (Ãšltimos {metrics.count} ciclos)</h3>
                 {metrics.count === 0 ? (
-                  <p style={{ color: 'var(--text-muted)' }}>Activa el modo diagnóstico y realiza algunos dictados para ver métricas.</p>
+                  <p style={{ color: 'var(--text-muted)' }}>Activa el modo diagnÃ³stico y realiza algunos dictados para ver mÃ©tricas.</p>
                 ) : (
                   <div className="metric-grid">
                     <div className="metric-card">
