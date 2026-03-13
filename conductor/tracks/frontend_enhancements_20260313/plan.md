@@ -11,7 +11,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Visual Foundation & Refined Styling' (Protocol in workflow.md) efb3b72
 
 ## Phase 2: Floating Pill (Minimized) Mode
-- [ ] Task: Design and implement the "Floating Pill" compact layout
+- [x] Task: Design and implement the "Floating Pill" compact layout 262b041
 - [ ] Task: Add "Mode Toggle" logic to switch between Main Window and Floating Pill
 - [ ] Task: Ensure transcription text and recording button are fully functional in the minimized Pill
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Floating Pill (Minimized) Mode' (Protocol in workflow.md)
