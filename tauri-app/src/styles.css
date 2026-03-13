@@ -1,15 +1,19 @@
 :root {
   color-scheme: dark;
-  --bg-deep: #060b14;
-  --bg-surface: #0b1423;
-  --bg-alt: #121e33;
-  --border-dim: #1e2c45;
+  --bg-deep: #04080f;
+  --bg-surface: #09111d;
+  --bg-alt: #111b2d;
+  --border-dim: #1a263a;
   --text-main: #e2eeff;
   --text-muted: #7d96bd;
   --accent-blue: #4a90e2;
   --accent-red: #ff4757;
   --accent-cyan: #00cec9;
   --accent-green: #20bf6b;
+
+  --accent-glow: rgba(74, 144, 226, 0.4);
+  --opalescent-bg: rgba(255, 255, 255, 0.03);
+  --opalescent-border: rgba(255, 255, 255, 0.08);
 
   --radius-sm: 8px;
   --radius-md: 14px;
