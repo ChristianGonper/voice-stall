@@ -552,6 +552,71 @@ label.row {
 .dot.bg-processing { background: var(--accent-cyan); }
 .dot.bg-error { background: #ff4757; }
 
+/* Floating Pill Mode */
+.floating-pill {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 6px 8px 6px 14px;
+  background: var(--bg-surface);
+  border-radius: 999px;
+  border: 1px solid var(--border-dim);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  gap: 12px;
+  user-select: none;
+}
+
+.pill-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pill-transcription {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-main);
+}
+
+.pill-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pill-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 0.8rem;
+}
+
+.pill-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.pill-btn.record {
+  background: var(--accent-red);
+  color: white;
+  border: none;
+  box-shadow: 0 0 12px rgba(255, 71, 87, 0.4);
+}
+
+.pill-btn.expand {
+  background: var(--bg-alt);
+  color: var(--text-muted);
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
