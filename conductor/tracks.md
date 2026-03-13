@@ -11,3 +11,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Frontend UI/UX Enhancement & History Copy Feature**
 *Link: [./tracks/frontend_enhancements_20260313/](./tracks/frontend_enhancements_20260313/)*
+
+---
+
+- [ ] **Track: Arreglar problemas con tildes en algunas palabras y commitear los cambios.**
+*Link: [./tracks/fix_ui_accents_20260313/](./tracks/fix_ui_accents_20260313/)*
