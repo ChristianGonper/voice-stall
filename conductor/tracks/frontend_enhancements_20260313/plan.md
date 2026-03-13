@@ -17,7 +17,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Floating Pill (Minimized) Mode' (Protocol in workflow.md) 1d6d8d4
 
 ## Phase 3: History & Always-Visible Copy Feature
-- [ ] Task: Update the History Item component to include an always-visible "Copy" icon button
+- [x] Task: Update the History Item component to include an always-visible "Copy" icon button 030515e
 - [ ] Task: Implement the "Copy to Clipboard" logic and "Copied!" feedback state
 - [ ] Task: Ensure correct text is copied for each entry in the history list
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: History & Always-Visible Copy Feature' (Protocol in workflow.md)
