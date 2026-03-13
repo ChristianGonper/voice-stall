@@ -4,6 +4,7 @@ import { LogicalSize } from "@tauri-apps/api/dpi";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getMetrics, initApp, saveSettings, setHotkey, toggleDictation } from "./api";
 import type { AppStateDto, FullConfig, MetricsSummary, StatusEvent } from "./types";
+import { FloatingPill } from "./FloatingPill";
 
 type TabKey = "control" | "settings" | "history" | "metrics";
 type ResizeDirection =
@@ -32,7 +33,7 @@ const EMPTY_METRICS: MetricsSummary = {
 };
 
 const NORMAL_WINDOW_SIZE = new LogicalSize(900, 760);
-const MINI_WINDOW_SIZE = new LogicalSize(360, 200);
+const MINI_WINDOW_SIZE = new LogicalSize(360, 60);
 const RESIZE_HANDLES: { direction: ResizeDirection; className: string }[] = [
   { direction: "North", className: "resize-north" },
   { direction: "South", className: "resize-south" },
@@ -199,8 +200,10 @@ export function App() {
       if (enable) {
         await appWindow.setSize(MINI_WINDOW_SIZE);
         await appWindow.setAlwaysOnTop(true);
+        await appWindow.setResizable(false);
       } else {
         await appWindow.setSize(NORMAL_WINDOW_SIZE);
+        await appWindow.setResizable(true);
       }
 
       setMiniMode(enable);
@@ -257,86 +260,64 @@ export function App() {
   }
 
   return (
-    <div className="shell" style={{ width: '100vw', height: '100vh', background: 'var(--bg-deep)' }}>
-      <div
-        className={`titlebar ${miniMode ? "compact" : ""}`}
-        data-tauri-drag-region
-      >
+    <div className="shell" style={{ width: '100vw', height: '100vh', background: miniMode ? 'transparent' : 'var(--bg-deep)' }}>
+      {!miniMode && (
         <div
-          className="titlebar-drag"
+          className="titlebar"
           data-tauri-drag-region
-          onDoubleClick={() => {
-            void toggleWindowMaximize();
-          }}
         >
-          <div className="titlebar-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
-            Voice Stall
-          </div>
-        </div>
-        <div className="titlebar-actions">
-          <button
-            className="titlebar-btn"
-            onClick={() => {
-              void toggleMiniMode(!miniMode);
+          <div
+            className="titlebar-drag"
+            data-tauri-drag-region
+            onDoubleClick={() => {
+              void toggleWindowMaximize();
             }}
-            title={miniMode ? "Expandir panel" : "Acoplar panel"}
           >
-            {miniMode ? (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
-            ) : (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
-            )}
-          </button>
-          <button className="titlebar-btn" onClick={() => { void toggleWindowMaximize(); }} title={isMaximized ? "Restaurar" : "Maximizar"}>
-            {isMaximized ? (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 8h11v11H8z"></path><path d="M5 16H4V5h11v1"></path></svg>
-            ) : (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="5" width="14" height="14"></rect></svg>
-            )}
-          </button>
-          <button className="titlebar-btn" onClick={() => { void appWindow.minimize().catch(console.error); }} title="Minimizar">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          </button>
-          <button className="titlebar-btn close" onClick={() => { void appWindow.close().catch(console.error); }} title="Cerrar">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
-        </div>
-      </div>
-
-      <div className="app-container">
-        {miniMode ? (
-          <div className="mini-widget">
-            <div
-              className="mini-header"
-              data-tauri-drag-region
-              onPointerDown={(e) => {
-                if (e.buttons === 1) {
-                  void appWindow.startDragging().catch(console.error);
-                }
-              }}
-            >
-              <div className="mini-brand">
-                <span className={`dot bg-${statusTone(status)}`}></span>
-                Voice Stall
-              </div>
-              <span className={`status-badge ${statusTone(status)}`}>
-                {STATUS_LABELS[status] ?? status.toUpperCase()}
-              </span>
-            </div>
-            <div className="mini-body">
-              <div className="mini-status-text">{statusMessage}</div>
-              <WaveBars status={status} />
-            </div>
-            <div className="mini-footer">
-              <button className={status === "recording" ? "danger" : "primary"} onClick={onToggle} style={{ flex: 1 }}>
-                {status === "recording" ? "Detener" : "Dictar"}
-              </button>
-              <button onClick={() => toggleMiniMode(false)} title="Expandir">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
-              </button>
+            <div className="titlebar-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+              Voice Stall
             </div>
           </div>
+          <div className="titlebar-actions">
+            <button
+              className="titlebar-btn"
+              onClick={() => {
+                void toggleMiniMode(!miniMode);
+              }}
+              title={miniMode ? "Expandir panel" : "Acoplar panel"}
+            >
+              {miniMode ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+              )}
+            </button>
+            <button className="titlebar-btn" onClick={() => { void toggleWindowMaximize(); }} title={isMaximized ? "Restaurar" : "Maximizar"}>
+              {isMaximized ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 8h11v11H8z"></path><path d="M5 16H4V5h11v1"></path></svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="5" width="14" height="14"></rect></svg>
+              )}
+            </button>
+            <button className="titlebar-btn" onClick={() => { void appWindow.minimize().catch(console.error); }} title="Minimizar">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+            <button className="titlebar-btn close" onClick={() => { void appWindow.close().catch(console.error); }} title="Cerrar">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="app-container" style={{ background: miniMode ? 'transparent' : 'var(--bg-deep)' }}>
+        {miniMode ? (
+          <FloatingPill 
+            status={status}
+            statusTone={statusTone}
+            statusMessage={statusMessage}
+            onToggle={onToggle}
+            onExpand={() => toggleMiniMode(false)}
+          />
         ) : (
           <div className="app-content">
             <div className="app-header">
