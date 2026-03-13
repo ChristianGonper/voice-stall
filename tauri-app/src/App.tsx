@@ -5,6 +5,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getMetrics, initApp, saveSettings, setHotkey, toggleDictation } from "./api";
 import type { AppStateDto, FullConfig, MetricsSummary, StatusEvent } from "./types";
 import { FloatingPill } from "./FloatingPill";
+import { HistoryItem } from "./HistoryItem";
 
 type TabKey = "control" | "settings" | "history" | "metrics";
 type ResizeDirection =
@@ -33,7 +34,7 @@ const EMPTY_METRICS: MetricsSummary = {
 };
 
 const NORMAL_WINDOW_SIZE = new LogicalSize(900, 760);
-const MINI_WINDOW_SIZE = new LogicalSize(360, 60);
+const MINI_WINDOW_SIZE = new LogicalSize(400, 80);
 const RESIZE_HANDLES: { direction: ResizeDirection; className: string }[] = [
   { direction: "North", className: "resize-north" },
   { direction: "South", className: "resize-south" },
@@ -110,8 +111,9 @@ export function App() {
 
   useEffect(() => {
     // Force background color on body for resilience
-    document.body.style.backgroundColor = '#060b14';
-    document.documentElement.style.backgroundColor = '#060b14';
+    const bgColor = miniMode ? 'transparent' : '#04080f';
+    document.body.style.backgroundColor = bgColor;
+    document.documentElement.style.backgroundColor = bgColor;
     
     let unlistenStatus: (() => void) | undefined;
     let unlistenDiag: (() => void) | undefined;
@@ -146,7 +148,7 @@ export function App() {
       if (unlistenDiag) unlistenDiag();
       if (unlistenTranscription) unlistenTranscription();
     };
-  }, [appWindow, config?.app.history_limit]);
+  }, [appWindow, config?.app.history_limit, miniMode]);
 
   const hotkeyLabel = useMemo(() => {
     const value = config?.app.hotkey ?? "ctrl+alt+s";
@@ -197,6 +199,8 @@ export function App() {
         await appWindow.unmaximize();
       }
 
+      setMiniMode(enable);
+
       if (enable) {
         await appWindow.setSize(MINI_WINDOW_SIZE);
         await appWindow.setAlwaysOnTop(true);
@@ -206,12 +210,11 @@ export function App() {
         await appWindow.setResizable(true);
       }
 
-      setMiniMode(enable);
       await syncWindowState();
     } catch (err) {
       console.error("Failed to resize window", err);
       setStatus("error");
-      setStatusMessage("No se pudo cambiar el tamano de la ventana.");
+      setStatusMessage(`Error ventana: ${String(err)}`);
     }
   };
 
@@ -473,10 +476,7 @@ export function App() {
                 ) : (
                   <div className="history-list">
                     {historyItems.map((item, i) => (
-                      <div className="history-item" key={i}>
-                        <div className="history-ts">{item.ts}</div>
-                        <div className="history-text">{item.text}</div>
-                      </div>
+                      <HistoryItem key={i} ts={item.ts} text={item.text} />
                     ))}
                   </div>
                 )}
