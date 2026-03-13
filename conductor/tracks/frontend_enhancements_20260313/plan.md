@@ -7,7 +7,7 @@
 ## Phase 1: Visual Foundation & Refined Styling
 - [x] Task: Create refined color palette and CSS variables for "Enhanced Deep Night+" 4ed4100
 - [x] Task: Update base UI components (Button, Card, Container) with deeper gradients and glow effects c792fdc
-- [ ] Task: Implement improved "Opalescent" surface components with higher-quality transparency and blur
+- [x] Task: Implement improved "Opalescent" surface components with higher-quality transparency and blur ee33f45
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Visual Foundation & Refined Styling' (Protocol in workflow.md)
 
 ## Phase 2: Floating Pill (Minimized) Mode
