@@ -39,6 +39,9 @@ body,
   color: var(--text-main);
   overflow: hidden;
   font-family: var(--font-ui);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .shell {
@@ -66,6 +69,7 @@ body,
   background-color: var(--bg-surface) !important;
   border-bottom: 1px solid var(--border-dim);
   flex-shrink: 0;
+  letter-spacing: 0.02em;
 }
 .titlebar-title {
   font-weight: 600;
