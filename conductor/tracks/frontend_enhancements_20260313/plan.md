@@ -24,6 +24,6 @@
 
 ## Phase 4: Final Polish & Visual Quality Check
 - [x] Task: Fine-tune typography and spacing across all views for a premium feel 4c62a03
-- [ ] Task: Perform a cross-view visual audit (Minimized vs. Maximized) for consistency
-- [ ] Task: Final verification of the copy button in different application states
+- [x] Task: Perform a cross-view visual audit (Minimized vs. Maximized) for consistency a573ddd
+- [x] Task: Final verification of the copy button in different application states a573ddd
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: Final Polish & Visual Quality Check' (Protocol in workflow.md)
