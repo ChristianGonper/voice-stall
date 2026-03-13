@@ -10,11 +10,11 @@
 - [x] Task: Implement improved "Opalescent" surface components with higher-quality transparency and blur ee33f45
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Visual Foundation & Refined Styling' (Protocol in workflow.md) efb3b72
 
-## Phase 2: Floating Pill (Minimized) Mode
+## Phase 2: Floating Pill (Minimized) Mode [checkpoint: 1d6d8d4]
 - [x] Task: Design and implement the "Floating Pill" compact layout 262b041
 - [x] Task: Add "Mode Toggle" logic to switch between Main Window and Floating Pill 223f730
 - [x] Task: Ensure transcription text and recording button are fully functional in the minimized Pill 9062be6
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Floating Pill (Minimized) Mode' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Floating Pill (Minimized) Mode' (Protocol in workflow.md) 1d6d8d4
 
 ## Phase 3: History & Always-Visible Copy Feature
 - [ ] Task: Update the History Item component to include an always-visible "Copy" icon button
