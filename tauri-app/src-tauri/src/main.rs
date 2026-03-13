@@ -70,6 +70,7 @@ async fn get_metrics(state: tauri::State<'_, AppState>, last_n: u32) -> Result<s
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
             let mut manager = SidecarManager::new(app.handle().clone()).map_err(|e| {
                 let msg = format!("No se pudo iniciar sidecar: {e}");
