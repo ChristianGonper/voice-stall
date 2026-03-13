@@ -18,8 +18,8 @@
 
 ## Phase 3: History & Always-Visible Copy Feature
 - [x] Task: Update the History Item component to include an always-visible "Copy" icon button 030515e
-- [ ] Task: Implement the "Copy to Clipboard" logic and "Copied!" feedback state
-- [ ] Task: Ensure correct text is copied for each entry in the history list
+- [x] Task: Implement the "Copy to Clipboard" logic and "Copied!" feedback state 030515e
+- [x] Task: Ensure correct text is copied for each entry in the history list 030515e
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: History & Always-Visible Copy Feature' (Protocol in workflow.md)
 
 ## Phase 4: Final Polish & Visual Quality Check
