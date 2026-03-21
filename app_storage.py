@@ -16,13 +16,19 @@ class AppStorage:
         self.timing_log_path = os.path.join(base_dir, "timings.log")
 
     def default_config(self):
-        return {
+        fallback = {
             "config_version": 1,
             "engine": {
                 "model_size": "large-v3-turbo",
                 "language": "auto",
                 "compute_type": "float16",
-                "initial_prompt": "Dictado profesional en español con terminología técnica en inglés (Spanglish).",
+                "initial_prompt": (
+                    "Dictado profesional en español con terminología técnica en inglés "
+                    "(Spanglish). Soporta Python, Matlab y conceptos de ingeniería. "
+                    "Transcribe solo lo dicho. Mantén los términos en inglés exactamente "
+                    "como se pronuncian y no los traduzcas al español. No añadas palabras "
+                    "de cierre ni fórmulas de cortesía (por ejemplo, gracias)."
+                ),
                 "profile": "balanced",
             },
             "app": {
@@ -33,6 +39,17 @@ class AppStorage:
             },
             "dictionary": {},
         }
+        if not os.path.exists(self.default_config_path):
+            return fallback
+        try:
+            with open(self.default_config_path, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+        except Exception:
+            logger.exception("No se pudo cargar config.default.json, usando fallback.")
+            return fallback
+        if not isinstance(cfg, dict):
+            return fallback
+        return self._merge_config(fallback, cfg)
 
     def _merge_config(self, base, override):
         merged = dict(base)
@@ -61,17 +78,6 @@ class AppStorage:
     def save_config(self, cfg):
         with open(self.config_path, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2, ensure_ascii=False)
-
-    def load_app_settings(self):
-        cfg = self.load_config()
-        app_cfg = cfg.setdefault("app", {})
-        app_cfg.setdefault("hotkey", "ctrl+alt+s")
-        app_cfg.setdefault("history_limit", 5)
-        app_cfg.setdefault("timing_log_max_kb", 512)
-        app_cfg.setdefault("diagnostic_mode", False)
-        cfg["app"] = app_cfg
-        self.save_config(cfg)
-        return app_cfg
 
     def load_history(self, history_limit):
         if not os.path.exists(self.history_path):

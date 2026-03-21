@@ -1,38 +1,23 @@
-﻿import { describe, it, expect } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { App } from "./App";
+import userEvent from "@testing-library/user-event";
+import { HistoryItem } from "./HistoryItem";
 
-// Mock Tauri APIs
-vi.mock("./api", () => ({
-  initApp: vi.fn(() => Promise.resolve({
-    config: { app: { history_limit: 10 }, engine: {}, dictionary: {} },
-    metrics: { count: 0, avg_total_ms: 0, avg_transcribe_ms: 0, avg_paste_ms: 0 },
-    history: [{ ts: "12:00:00", text: "Test transcription" }],
-    status: "idle",
-    status_message: "Ready"
-  })),
-  getMetrics: vi.fn(),
-  saveSettings: vi.fn(),
-  setHotkey: vi.fn(),
-  toggleDictation: vi.fn()
+const writeTextMock = vi.fn(async (_text: string) => {});
+
+vi.mock("@tauri-apps/plugin-clipboard-manager", () => ({
+  writeText: (text: string) => writeTextMock(text),
 }));
 
-vi.mock("@tauri-apps/api/window", () => ({
-  getCurrentWindow: vi.fn(() => ({
-    isMaximized: vi.fn(() => Promise.resolve(false)),
-    listen: vi.fn(),
-  }))
-}));
+describe("History copy feature", () => {
+  it("copies the transcription and shows copied feedback", async () => {
+    const user = userEvent.setup();
+    render(<HistoryItem ts="12:00:00" text="Texto dictado" />);
 
-vi.mock("@tauri-apps/api/event", () => ({
-  listen: vi.fn(() => Promise.resolve(() => {}))
-}));
+    const button = screen.getByTitle("Copiar al portapapeles");
+    await user.click(button);
 
-describe("History Copy Feature", () => {
-  it("should show a copy button for each history item", async () => {
-    render(<App />);
-    // Need to wait for initial load and switch to history tab
-    // In a real test we'd click the tab, but here I just want to see if the button is planned
-    // I'll check for the button after rendering history
+    expect(writeTextMock).toHaveBeenCalledWith("Texto dictado");
+    expect(screen.getByTitle("¡Copiado!")).toHaveClass("copied");
   });
 });

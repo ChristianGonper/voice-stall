@@ -32,6 +32,8 @@ timings.log.1
 backup_dictado.txt
 *.lnk
 config.json
+benchmarks/benchmark_latest.json
+benchmarks/benchmark_latest.md
 
 # Local-only docs and planning (keep on disk, not in GitHub)
 AGENTS.md

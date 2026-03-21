@@ -1,4 +1,4 @@
-# Benchmark Report
+# Benchmark Report (Archived)
 
 - Timestamp: `2026-02-27T20:37:40`
 - Iterations: `2000`
@@ -14,6 +14,5 @@
 - P95: `0.005 ms`
 
 ## Notes
-- `dictation_service` should stay near-zero; any growth indicates orchestration regressions.
-- `dictionary_apply` should remain sub-millisecond; growth suggests regex bloat.
-- Compare this file across commits for trend tracking.
+- Historical snapshot archived from the former `benchmark_latest.*` files.
+- Current local runs still generate `benchmarks/benchmark_latest.{json,md}`, but those outputs are ignored by Git.

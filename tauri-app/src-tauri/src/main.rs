@@ -54,16 +54,6 @@ async fn save_settings(
 }
 
 #[tauri::command]
-async fn set_hotkey(state: tauri::State<'_, AppState>, hotkey: String) -> Result<serde_json::Value, String> {
-    call_sidecar::<serde_json::Value>(state, "set_hotkey", json!({ "hotkey": hotkey })).await
-}
-
-#[tauri::command]
-async fn get_history(state: tauri::State<'_, AppState>, limit: u32) -> Result<serde_json::Value, String> {
-    call_sidecar::<serde_json::Value>(state, "get_history", json!({ "limit": limit })).await
-}
-
-#[tauri::command]
 async fn get_metrics(state: tauri::State<'_, AppState>, last_n: u32) -> Result<serde_json::Value, String> {
     call_sidecar::<serde_json::Value>(state, "get_recent_metrics", json!({ "last_n": last_n })).await
 }
@@ -88,8 +78,6 @@ fn main() {
             init_app,
             toggle_dictation,
             save_settings,
-            set_hotkey,
-            get_history,
             get_metrics,
         ])
         .run(tauri::generate_context!())

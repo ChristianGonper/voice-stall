@@ -16,12 +16,22 @@ def test_load_config_merges_defaults(tmp_path):
     assert loaded["dictionary"] == {"foo": "bar"}
 
 
-def test_load_app_settings_persists_config_json(tmp_path):
+def test_default_config_uses_versioned_template_when_present(tmp_path):
     storage = AppStorage(str(tmp_path))
-    app_cfg = storage.load_app_settings()
+    versioned = {
+        "engine": {"initial_prompt": "Plantilla versionada", "profile": "fast"},
+        "app": {"history_limit": 12},
+        "dictionary": {"voz tal": "Voice Stall"},
+    }
+    (tmp_path / "config.default.json").write_text(json.dumps(versioned), encoding="utf-8")
 
-    assert app_cfg["hotkey"] == "ctrl+alt+s"
-    assert (tmp_path / "config.json").exists()
+    defaults = storage.default_config()
+
+    assert defaults["engine"]["initial_prompt"] == "Plantilla versionada"
+    assert defaults["engine"]["profile"] == "fast"
+    assert defaults["app"]["history_limit"] == 12
+    assert defaults["app"]["hotkey"] == "ctrl+alt+s"
+    assert defaults["dictionary"]["voz tal"] == "Voice Stall"
 
 
 def test_push_history_applies_limit_and_saves(tmp_path):

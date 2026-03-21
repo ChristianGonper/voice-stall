@@ -448,19 +448,6 @@ class SidecarServer:
             self.engine.load_config(force=True)
         return {"ok": True}
 
-    def set_hotkey(self, hotkey: str) -> dict[str, Any]:
-        self.cfg = self.storage.load_config()
-        app_cfg = self.cfg.setdefault("app", {})
-        app_cfg["hotkey"] = self._normalize_hotkey(hotkey)
-        self.cfg["app"] = app_cfg
-        self.storage.save_config(self.cfg)
-        self.app_cfg = app_cfg
-        self._restart_hotkey_listener()
-        return {"ok": True, "hotkey": app_cfg["hotkey"]}
-
-    def get_history(self, limit: int) -> list[dict[str, Any]]:
-        return self.storage.load_history(int(limit))
-
     def get_recent_metrics(self, last_n: int) -> dict[str, Any]:
         return self._compute_recent_metrics(int(last_n))
 
@@ -477,10 +464,6 @@ class SidecarServer:
             return self.stop_and_transcribe()
         if method == "toggle_dictation":
             return self.toggle_dictation()
-        if method == "set_hotkey":
-            return self.set_hotkey(str(params.get("hotkey", "ctrl+alt+s")))
-        if method == "get_history":
-            return self.get_history(int(params.get("limit", 10)))
         if method == "get_recent_metrics":
             return self.get_recent_metrics(int(params.get("last_n", 5)))
         raise ValueError(f"Metodo no soportado: {method}")

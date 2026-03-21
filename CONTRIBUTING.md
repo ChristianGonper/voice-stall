@@ -1,48 +1,52 @@
 # Contributing to Voice Stall
 
-Gracias por contribuir.
-
 ## Flujo de trabajo
 
 1. La rama principal del proyecto es `version-2.0`.
 2. No trabajes directamente sobre `version-2.0`.
-3. Crea una rama de trabajo desde `version-2.0`:
-   - `feat/...` para nuevas funcionalidades
-   - `fix/...` para correcciones
-   - `docs/...` para documentación
-   - `chore/...` para mantenimiento
-4. Abre una Pull Request hacia `version-2.0`.
+3. Crea una rama desde `version-2.0`:
+   - `feat/...`
+   - `fix/...`
+   - `docs/...`
+   - `chore/...`
+4. Abre una Pull Request contra `version-2.0`.
 
-## Requisitos antes de abrir PR
+## Validación mínima antes de abrir PR
 
-1. Ejecuta tests:
-   ```powershell
-   uv run python -m pytest -q
-   ```
-2. Verifica que no estás subiendo archivos locales por error (`config.json`, logs, historial, etc.).
-3. Mantén los commits claros y en imperativo:
-   - `feat: ...`
-   - `fix: ...`
-   - `docs: ...`
-   - `chore: ...`
+```powershell
+uv run python -m pytest -q
+cd tauri-app
+npm test -- --run
+```
+
+Revisa también que no estás subiendo archivos locales por error:
+
+- `config.json`
+- `dictation_history.json`
+- `timings.log`
+- accesos directos `.lnk`
+- artefactos generados de benchmark
 
 ## Estilo del proyecto
 
 - Python 3.12+
-- Convenciones PEP 8
-- `snake_case` para funciones/variables
-- `PascalCase` para clases
+- `uv` para dependencias Python
+- PEP 8 en Python
+- `snake_case` para funciones y variables Python
+- `PascalCase` para clases Python
+- TypeScript estricto en `tauri-app/`
 
 ## Estructura actual
 
-- v2 principal: `main_qt.py`
+- app principal: `tauri-app/`
+- sidecar backend: `python_backend.py`
 - motor STT: `engine.py`
 - grabación: `recorder.py`
-- tests: `tests/`
+- persistencia local: `app_storage.py`
 
 ## Configuración local
 
 - Plantilla versionada: `config.default.json`
-- Archivo local no versionado: `config.json`
+- Archivo local: `config.json`
 
-Si `config.json` no existe, la app lo genera automáticamente desde la plantilla.
+`config.json` se crea al guardar ajustes desde la aplicación.

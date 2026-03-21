@@ -39,7 +39,7 @@
 ### Rendimiento y evaluación técnica
 - Runner de benchmark reproducible: `benchmarks/run_benchmark.py`.
 - Artefactos de benchmark generados en `benchmarks/benchmark_latest.{json,md}`.
-- Evaluación de framework documentada en `docs/framework_evaluation_2026-02-27.md`.
+- Evaluación de framework archivada en `docs/archive/framework_evaluation_2026-02-27.md`.
 
 ## 2.0.0 - 2026-02-17
 

@@ -6,61 +6,69 @@
 
 Aplicación local de dictado para Windows con `faster-whisper`, hotkey global y pegado automático.
 
-## Estado del proyecto
+## Estado actual
 
-- Rama canónica: `version-2.0`
-- App principal (v2): `tauri-app/` (Tauri + React + sidecar Python)
-- UI de escritorio activa: frontend Tauri con backend `python_backend.py`
-- Nuevo Diseño: "Deep Night Minimalist" con bordes redondeados y opacidad total en contenido.
+- Aplicación activa: `tauri-app/` (Tauri + React + sidecar Python).
+- Backend local: `python_backend.py`.
+- Flujo principal: grabación -> transcripción STT -> diccionario -> pegado automático.
+- Lanzamiento habitual en Windows: acceso directo que apunta a `start_voz_tauri_silent.vbs`.
 
 ## Requisitos
 
 - Windows 10/11
 - Python `>=3.12`
 - `uv` en `PATH`
-- GPU NVIDIA + CUDA recomendada (fallback automático a CPU `int8`)
+- Node.js 20+
+- Rust toolchain estable
+- GPU NVIDIA + CUDA recomendada; si no hay CUDA, el motor cae a CPU `int8`
 
 ## Instalación
 
 ```powershell
 uv sync
+cd tauri-app
+npm install
 ```
 
-## Ejecutar v2
+## Ejecutar la aplicación
 
-Requisitos adicionales:
-- Node.js 20+
-- Rust toolchain (stable) con target Windows
+Desarrollo:
 
 ```powershell
 cd tauri-app
-npm install
 npm run tauri dev
 ```
 
-Lanzadores locales Tauri:
+Lanzadores locales:
 
 ```powershell
 .\start_voz_tauri.cmd
 .\start_voz_tauri_silent.vbs
-.\crear_acceso_directo_v2.ps1   # Reapunta Voice Stall v2.lnk a Tauri
+.\crear_acceso_directo_v2.ps1
 ```
 
-Backend sidecar:
-- `python_backend.py` (protocolo JSON por `stdin/stdout`)
-- Reusa `engine.py`, `recorder.py`, `dictation_service.py` y `app_storage.py`
-
-## Configuración
+## Configuración y datos locales
 
 - Plantilla versionada: `config.default.json`
-- Configuración local (no versionada): `config.json`
+- Configuración local: `config.json`
+- Historial local: `dictation_history.json`
+- Logs de timing: `timings.log`
 
-Al arrancar la app, si `config.json` no existe, se genera automáticamente usando la plantilla.
+`config.json` no se genera al arrancar. Se crea cuando la aplicación guarda ajustes por primera vez.
 
 ## Tests
 
+Backend Python:
+
 ```powershell
 uv run python -m pytest -q
+```
+
+Frontend Tauri:
+
+```powershell
+cd tauri-app
+npm test -- --run
 ```
 
 ## Benchmark local
@@ -69,38 +77,25 @@ uv run python -m pytest -q
 uv run python benchmarks/run_benchmark.py --iterations 2000
 ```
 
-Salida:
+Salida local generada:
+
 - `benchmarks/benchmark_latest.json`
 - `benchmarks/benchmark_latest.md`
+
+Estos archivos se generan bajo demanda y no forman parte del estado versionado normal.
 
 ## Estructura
 
 - `python_backend.py`: sidecar Python persistente para Tauri
 - `tauri-app/`: shell Tauri (Rust) + frontend React/TypeScript
-- `dictation_service.py`: orquestación de ciclo de dictado
-- `app_storage.py`: configuración, historial y logs de timing
+- `dictation_service.py`: orquestación del ciclo de dictado
+- `app_storage.py`: configuración, historial y timings locales
 - `engine.py`: STT, perfiles, prompt y diccionario
 - `recorder.py`: captura de audio y WAV temporal
-- `tests/`: tests unitarios
-
-## Diseño e Interfaz
-
-- **Concepto**: Minimalista, alto contraste, estética "Premium Dark".
-- **Transparencia**: Ventana flotante con bordes redondeados transparentes (efecto frameless). El contenido de la aplicación es 100% opaco para máxima legibilidad.
-- **Framework**: Tauri + React con sidecar Python.
-
-## Alcance actual
-
-- El dictado se procesa en una sola pasada STT + diccionario + pegado.
-- Soporte para perfiles de rendimiento (fast, balanced, accurate).
-- Diagnóstico en tiempo real y métricas de latencia.
+- `tests/`: tests de backend
 
 ## Privacidad
 
 - Audio y texto se procesan localmente.
 - `temp_audio.wav` se borra tras procesar.
-- Historial y métricas se guardan en local.
-
-## Evaluación de framework
-
-- Ver: `docs/framework_evaluation_2026-02-27.md`
+- Historial y métricas se guardan solo en local.

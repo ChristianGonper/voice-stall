@@ -6,6 +6,7 @@ import time
 
 from faster_whisper import WhisperModel
 
+from app_storage import AppStorage
 from transcription_models import TranscriptionResult
 
 
@@ -39,17 +40,10 @@ class STTEngine:
         logger.info("Motor cargado y listo.")
 
     def load_config(self, force=False):
-        default_config = {
-            "config_version": 1,
-            "engine": {
-                "model_size": "large-v3-turbo",
-                "language": "auto",
-                "compute_type": "float16",
-                "initial_prompt": "Dictado profesional en espanol de Espana. Usa puntuacion correcta.",
-                "profile": "balanced",
-            },
-            "dictionary": {},
-        }
+        storage = AppStorage(os.path.dirname(__file__))
+        storage.config_path = self.config_path
+        storage.default_config_path = self.default_config_path
+        default_config = storage.default_config()
         config_source = self.config_path if os.path.exists(self.config_path) else self.default_config_path
         file_mtime = os.path.getmtime(config_source) if os.path.exists(config_source) else None
         if not force and self.config and file_mtime == self._config_mtime:
@@ -58,14 +52,18 @@ class STTEngine:
         if os.path.exists(config_source):
             try:
                 with open(config_source, "r", encoding="utf-8") as f:
-                    self.config = json.load(f)
+                    loaded = json.load(f)
+                    self.config = loaded if isinstance(loaded, dict) else default_config
             except Exception:
                 logger.exception("Error cargando configuracion.")
                 self.config = default_config
         else:
             self.config = default_config
 
-        self.config.setdefault("config_version", 1)
+        if not isinstance(self.config, dict):
+            self.config = default_config
+
+        self.config = storage._merge_config(default_config, self.config)
         engine_cfg = self.config.get("engine", {})
         self.model_size = engine_cfg.get("model_size", "large-v3-turbo")
         lang_cfg = str(engine_cfg.get("language", "auto")).strip().lower()
@@ -75,7 +73,7 @@ class STTEngine:
             self.language = "en"
         else:
             self.language = "es"
-        self.initial_prompt = engine_cfg.get("initial_prompt", "Dictado en espanol.")
+        self.initial_prompt = engine_cfg.get("initial_prompt", default_config["engine"]["initial_prompt"])
         self.profile = engine_cfg.get("profile", "balanced")
         self.dictionary = self.config.get("dictionary", {})
         self._dictionary_patterns = self._build_dictionary_patterns(self.dictionary)

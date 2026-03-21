@@ -1,8 +1,8 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { LogicalSize } from "@tauri-apps/api/dpi";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { getMetrics, initApp, saveSettings, setHotkey, toggleDictation } from "./api";
+import { getMetrics, initApp, saveSettings, toggleDictation } from "./api";
 import type { AppStateDto, FullConfig, MetricsSummary, StatusEvent } from "./types";
 import { FloatingPill } from "./FloatingPill";
 import { HistoryItem } from "./HistoryItem";
@@ -203,9 +203,8 @@ export function App() {
   const onSave = async () => {
     if (!config) return;
     await saveSettings(config);
-    const hotkeyResult = await setHotkey(config.app.hotkey);
     setStatus("idle");
-    setStatusMessage(`ConfiguraciÃ³n aplicada (${hotkeyResult.hotkey})`);
+    setStatusMessage(`Configuración aplicada (${config.app.hotkey})`);
   };
 
   const addDictionaryItem = () => {
@@ -286,7 +285,7 @@ export function App() {
       <div className="shell">
         <div className="app-container" style={{ padding: 24, justifyContent: "center", alignItems: "center" }}>
           <h2>Error Fatal</h2>
-          <p style={{ color: "var(--accent-red)" }}>{bootError ?? "No se pudo cargar la configuraciÃƒÂ³n."}</p>
+          <p style={{ color: "var(--accent-red)" }}>{bootError ?? "No se pudo cargar la configuración."}</p>
           <button className="primary" onClick={() => window.location.reload()}>Reintentar</button>
         </div>
       </div>
@@ -357,7 +356,7 @@ export function App() {
             <div className="app-header">
               <div>
                 <h1 className="brand">Voice Stall</h1>
-                <div className="subtitle">Dictado STT local ultrarrÃ¡pido</div>
+                <div className="subtitle">Dictado STT local ultrarrápido</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
                 <span className={`status-badge ${statusTone(status)}`}>
@@ -403,7 +402,7 @@ export function App() {
                 </div>
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, verticalAlign: 'middle' }}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                  Usa el atajo de teclado para alternar rÃ¡pidamente en cualquier ventana.
+                  Usa el atajo de teclado para alternar rápidamente en cualquier ventana.
                 </div>
               </div>
             )}
@@ -420,7 +419,7 @@ export function App() {
                     />
                   </label>
                   <label>
-                    LÃ­mite historial
+                    Límite historial
                     <input
                       type="number"
                       min={1}
@@ -437,7 +436,7 @@ export function App() {
                       value={config.engine.model_size}
                       onChange={(e) => setConfig({ ...config, engine: { ...config.engine, model_size: e.target.value } })}
                     >
-                      <option value="large-v3-turbo">large-v3-turbo (RÃ¡pido)</option>
+                      <option value="large-v3-turbo">large-v3-turbo (Rápido)</option>
                       <option value="base">base (Ligero)</option>
                     </select>
                   </label>
@@ -447,9 +446,9 @@ export function App() {
                       value={config.engine.language}
                       onChange={(e) => setConfig({ ...config, engine: { ...config.engine, language: e.target.value } })}
                     >
-                      <option value="auto">AutomÃ¡tico</option>
-                      <option value="es">EspaÃ±ol</option>
-                      <option value="en">InglÃ©s</option>
+                      <option value="auto">Automático</option>
+                      <option value="es">Español</option>
+                      <option value="en">Inglés</option>
                     </select>
                   </label>
                 </div>
@@ -463,7 +462,7 @@ export function App() {
                         setConfig({ ...config, app: { ...config.app, diagnostic_mode: e.target.checked } })
                       }
                     />
-                    Registrar mÃ©tricas de diagnÃ³stico de velocidad
+                    Registrar métricas de diagnóstico de velocidad
                   </label>
                 </div>
 
@@ -481,7 +480,7 @@ export function App() {
                     onChange={(e) => setNewDictValue(e.target.value)}
                     style={{ flex: 1 }}
                   />
-                  <button onClick={addDictionaryItem}>AÃ±adir regla</button>
+                  <button onClick={addDictionaryItem}>Añadir regla</button>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
@@ -516,9 +515,9 @@ export function App() {
 
             {tab === "metrics" && (
               <div className="panel">
-                <h3>Rendimiento (Ãšltimos {metrics.count} ciclos)</h3>
+                <h3>Rendimiento (Últimos {metrics.count} ciclos)</h3>
                 {metrics.count === 0 ? (
-                  <p style={{ color: 'var(--text-muted)' }}>Activa el modo diagnÃ³stico y realiza algunos dictados para ver mÃ©tricas.</p>
+                  <p style={{ color: 'var(--text-muted)' }}>Activa el modo diagnóstico y realiza algunos dictados para ver métricas.</p>
                 ) : (
                   <div className="metric-grid">
                     <div className="metric-card">
