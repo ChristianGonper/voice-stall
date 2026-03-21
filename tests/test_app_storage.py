@@ -13,6 +13,7 @@ def test_load_config_merges_defaults(tmp_path):
     assert loaded["config_version"] == 1
     assert loaded["app"]["hotkey"] == "ctrl+shift+s"
     assert loaded["app"]["history_limit"] == 5
+    assert loaded["engine"]["language"] == "es"
     assert loaded["dictionary"] == {"foo": "bar"}
 
 
@@ -29,6 +30,7 @@ def test_default_config_uses_versioned_template_when_present(tmp_path):
 
     assert defaults["engine"]["initial_prompt"] == "Plantilla versionada"
     assert defaults["engine"]["profile"] == "fast"
+    assert defaults["engine"]["language"] == "es"
     assert defaults["app"]["history_limit"] == 12
     assert defaults["app"]["hotkey"] == "ctrl+alt+s"
     assert defaults["dictionary"]["voz tal"] == "Voice Stall"

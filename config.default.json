@@ -1,7 +1,7 @@
 {
   "engine": {
     "model_size": "large-v3-turbo",
-    "language": "auto",
+    "language": "es",
     "compute_type": "float16",
     "initial_prompt": "Dictado profesional en español con terminología técnica en inglés (Spanglish). Soporta Python, Matlab y conceptos de ingeniería. Transcribe solo lo dicho. Mantén los términos en inglés exactamente como se pronuncian y no los traduzcas al español. No añadas palabras de cierre ni fórmulas de cortesía (por ejemplo, gracias).",
     "profile": "balanced"

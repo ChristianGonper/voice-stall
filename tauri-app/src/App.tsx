@@ -436,7 +436,9 @@ export function App() {
                       value={config.engine.model_size}
                       onChange={(e) => setConfig({ ...config, engine: { ...config.engine, model_size: e.target.value } })}
                     >
-                      <option value="large-v3-turbo">large-v3-turbo (Rápido)</option>
+                      <option value="large-v3-turbo">large-v3-turbo (Recomendado)</option>
+                      <option value="medium">medium (Robusto)</option>
+                      <option value="small">small (Intermedio)</option>
                       <option value="base">base (Ligero)</option>
                     </select>
                   </label>

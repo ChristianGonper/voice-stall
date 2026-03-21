@@ -20,7 +20,7 @@ class AppStorage:
             "config_version": 1,
             "engine": {
                 "model_size": "large-v3-turbo",
-                "language": "auto",
+                "language": "es",
                 "compute_type": "float16",
                 "initial_prompt": (
                     "Dictado profesional en español con terminología técnica en inglés "
