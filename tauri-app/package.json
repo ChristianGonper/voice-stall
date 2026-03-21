@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev:prepare": "node ./scripts/ensure-dev-port.mjs 1430",
+    "dev": "npm run dev:prepare && vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
