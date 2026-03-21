@@ -84,6 +84,10 @@ Salida local generada:
 
 Estos archivos se generan bajo demanda y no forman parte del estado versionado normal.
 
+## Guías adicionales
+
+- Selección de modelo e idioma: `docs/model_language_guide.md`
+
 ## Estructura
 
 - `python_backend.py`: sidecar Python persistente para Tauri
